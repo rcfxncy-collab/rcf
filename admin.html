@@ -192,22 +192,16 @@ function logout(){
 window.location="/logout";
 }
 
-// 🔥 LOAD BILLS FROM SERVER
 async function loadBills(){
 const res = await fetch("/get-bills");
-if(res.status===401){
-window.location="/adminuser";
-return;
-}
 bills = await res.json();
 render();
 }
 
-// 🔥 SAVE BILL TO DATABASE
 async function saveBill(){
 
 if(!billNo.value.trim() || !nameField.value.trim()){
-alert("Bill No & Customer Name required!");
+alert("Bill No & Name required!");
 return;
 }
 
@@ -219,11 +213,20 @@ total: parseFloat(total.value)||0,
 received: parseFloat(received.value)||0
 };
 
+if(editId){
+await fetch(`/update-bill/${editId}`,{
+method:"PUT",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(data)
+});
+editId=null;
+}else{
 await fetch("/save-bill",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify(data)
 });
+}
 
 clearForm();
 loadBills();
@@ -237,7 +240,6 @@ total.value="";
 received.value="";
 }
 
-// 🔥 RENDER TABLE
 function render(){
 
 let table="";
@@ -283,6 +285,8 @@ table+=`
 <td>${balance}</td>
 <td>${bDate.toLocaleString()}</td>
 <td>
+<button onclick="editBill('${b._id}')">Edit</button>
+<button onclick="deleteBill('${b._id}')">Delete</button>
 <button onclick="shareWA('${b._id}')">WA</button>
 <button onclick="downloadPDF('${b._id}')">PDF</button>
 </td>
@@ -298,7 +302,25 @@ document.getElementById("totalBalance").innerText=tBalance;
 document.getElementById("todayCollection").innerText=todayTotal;
 }
 
-// 🔥 WHATSAPP SHARE
+function editBill(id){
+let b=bills.find(x=>x._id===id);
+billNo.value=b.billNumber;
+nameField.value=b.name;
+mobile.value=b.mobile;
+total.value=b.total;
+received.value=b.received;
+editId=id;
+}
+
+async function deleteBill(id){
+if(confirm("Delete this bill?")){
+await fetch(`/delete-bill/${id}`,{
+method:"DELETE"
+});
+loadBills();
+}
+}
+
 function shareWA(id){
 let b=bills.find(x=>x._id===id);
 let balance=b.total-b.received;
@@ -314,43 +336,26 @@ Balance: ${balance}`;
 window.open(`https://wa.me/?text=${encodeURIComponent(message)}`);
 }
 
-// 🔥 PDF DOWNLOAD
 function downloadPDF(id){
-
 const { jsPDF } = window.jspdf;
 let doc = new jsPDF();
 let b=bills.find(x=>x._id===id);
 let balance=b.total-b.received;
 
-doc.setFillColor(255,87,34);
-doc.rect(0,0,210,30,"F");
-doc.setTextColor(255,255,255);
-doc.setFontSize(18);
-doc.text("COMPANY NAME",70,20);
-
-doc.setTextColor(0,0,0);
-doc.setFontSize(16);
-doc.text("PAYMENT RECEIPT",65,50);
-
-doc.setFontSize(12);
-doc.text("Bill No: "+b.billNumber,20,70);
-doc.text("Customer: "+b.name,20,80);
-doc.text("Mobile: "+b.mobile,20,90);
-doc.text("Total Amount: "+b.total,20,110);
-doc.text("Received: "+b.received,20,120);
-doc.text("Balance: "+balance,20,130);
-doc.text("Date: "+new Date(b.date).toLocaleString(),20,150);
-
-doc.line(20,160,190,160);
-doc.text("Thank You For Your Business!",60,175);
+doc.text("PAYMENT RECEIPT",70,20);
+doc.text("Bill: "+b.billNumber,20,40);
+doc.text("Customer: "+b.name,20,50);
+doc.text("Total: "+b.total,20,70);
+doc.text("Received: "+b.received,20,80);
+doc.text("Balance: "+balance,20,90);
 
 doc.save("Receipt_"+b.billNumber+".pdf");
 }
 
-// 🔥 INITIAL LOAD
 loadBills();
 
 </script>
 
 </body>
+
 </html>
