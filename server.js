@@ -83,5 +83,24 @@ app.get("/get-bills", async (req, res) => {
     const bills = await Bill.find().sort({ date: -1 });
     res.json(bills);
 });
+// 🔥 UPDATE BILL
+app.put("/update-bill/:id", async (req, res) => {
+
+    if (!req.session.loggedIn)
+        return res.status(401).json({ error: "Unauthorized" });
+
+    await Bill.findByIdAndUpdate(req.params.id, req.body);
+    res.json({ success: true });
+});
+
+// 🔥 DELETE BILL
+app.delete("/delete-bill/:id", async (req, res) => {
+
+    if (!req.session.loggedIn)
+        return res.status(401).json({ error: "Unauthorized" });
+
+    await Bill.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+});
 
 app.listen(3000, () => console.log("Server Running..."));
