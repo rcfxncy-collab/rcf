@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#1c1c1c);
+background-size:400% 400%;
+animation:bgMove 10s infinite alternate;
+}
+
+@keyframes bgMove{
+0%{background-position:0% 50%}
+100%{background-position:100% 50%}
+}
+
+.box{
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(15px);
+padding:40px;
+border-radius:20px;
+width:320px;
+color:white;
+box-shadow:0 0 30px rgba(0,0,0,0.6);
+animation:fadeIn 1s ease;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1;transform:translateY(0)}
+}
+
+input{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:none;
+border-radius:10px;
+outline:none;
+background:rgba(255,255,255,0.1);
+color:white;
+}
+
+input:focus{
+box-shadow:0 0 10px #00f2ff;
+}
+
+button{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:none;
+border-radius:10px;
+background:linear-gradient(45deg,#ff9800,#ff5722);
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.05);
+box-shadow:0 0 15px #ff5722;
+}
+
+
+
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<center><h2>ADMIN LOGIN</h2></center>
+<center><h3>DON'ASSCESS ANY OTHERS</h3></center>
+
+<input type="text" id="loginId" placeholder="Admin ID" autocomplete="off">
+<input type="password" id="loginPass" placeholder="Password" autocomplete="new-password">
+<button onclick="login()" method="POST">Login</button>
+<button class="back-btn" onclick="goBack()">Back to Home</button>
+</div>
+
+<script>
+async function login() {
+
+    const username = document.getElementById("loginId").value;
+    const password = document.getElementById("loginPass").value;
+
+    const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+        window.location.href = "/admin";
+    } else {
+        alert("Invalid Login");
+    }
+}
+
+function goBack() {
+    window.location.href = "/";
+}
+</script>
+
+</body>
+</html>

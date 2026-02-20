@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Admin Dashboard</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(-45deg,#141e30,#243b55,#0f2027,#000);
+background-size:400% 400%;
+animation:bgMove 12s infinite alternate;
+color:white;
+}
+
+@keyframes bgMove{
+0%{background-position:0% 50%}
+100%{background-position:100% 50%}
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 20px;
+background:rgba(0,0,0,0.6);
+backdrop-filter:blur(10px);
+}
+
+.glass{
+background:rgba(255,255,255,0.07);
+backdrop-filter:blur(15px);
+padding:20px;
+margin:15px;
+border-radius:15px;
+box-shadow:0 0 20px rgba(0,0,0,0.6);
+animation:fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1;transform:translateY(0)}
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+gap:10px;
+}
+
+input{
+padding:10px;
+border:none;
+border-radius:8px;
+background:rgba(255,255,255,0.1);
+color:white;
+}
+
+button{
+padding:8px 12px;
+border:none;
+border-radius:8px;
+background:linear-gradient(45deg,#ff9800,#ff5722);
+color:white;
+cursor:pointer;
+font-size:12px;
+transition:0.3s;
+}
+button:hover{
+transform:scale(1.05);
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:15px;
+}
+
+.statCard{
+background:rgba(0,0,0,0.5);
+padding:15px;
+border-radius:12px;
+text-align:center;
+}
+
+.table-wrapper{
+overflow-x:auto;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+min-width:900px;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid rgba(255,255,255,0.1);
+text-align:center;
+font-size:13px;
+}
+
+@media(max-width:600px){
+th,td{font-size:11px}
+button{font-size:10px;padding:6px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h2>Company Admin Dashboard</h2>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="glass">
+<div class="form-grid">
+<input id="billNo" placeholder="Bill Number">
+<input id="name" placeholder="Customer Name">
+<input id="mobile" placeholder="Mobile">
+<input id="total" type="number" placeholder="Total Amount">
+<input id="received" type="number" placeholder="Received Amount">
+</div>
+<br>
+<button onclick="saveBill()">Save</button>
+<button onclick="scanBill()">Scan</button>
+</div>
+
+<div class="glass stats">
+<div class="statCard">
+<h4>Total Amount</h4>
+<h3 id="totalAmount">0</h3>
+</div>
+<div class="statCard">
+<h4>Total Received</h4>
+<h3 id="totalReceived">0</h3>
+</div>
+<div class="statCard">
+<h4>Total Balance</h4>
+<h3 id="totalBalance">0</h3>
+</div>
+<div class="statCard">
+<h4>Today Collection</h4>
+<h3 id="todayCollection">0</h3>
+</div>
+</div>
+
+<div class="glass">
+<input id="search" placeholder="Search Bill/Name/Mobile" onkeyup="render()">
+<input type="date" id="filterDate" onchange="render()">
+<button onclick="downloadExcel()">Excel</button>
+
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Bill</th>
+<th>Name</th>
+<th>Mobile</th>
+<th>Total</th>
+<th>Received</th>
+<th>Balance</th>
+<th>Date</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="billTable"></tbody>
+</table>
+</div>
+</div>
+
+<script>
+
+let bills = [];
+let editId = null;
+
+const billNo = document.getElementById("billNo");
+const nameField = document.getElementById("name");
+const mobile = document.getElementById("mobile");
+const total = document.getElementById("total");
+const received = document.getElementById("received");
+const search = document.getElementById("search");
+const filterDate = document.getElementById("filterDate");
+const billTable = document.getElementById("billTable");
+
+function logout(){
+window.location="/logout";
+}
+
+// 🔥 LOAD BILLS FROM SERVER
+async function loadBills(){
+const res = await fetch("/get-bills");
+if(res.status===401){
+window.location="/adminuser";
+return;
+}
+bills = await res.json();
+render();
+}
+
+// 🔥 SAVE BILL TO DATABASE
+async function saveBill(){
+
+if(!billNo.value.trim() || !nameField.value.trim()){
+alert("Bill No & Customer Name required!");
+return;
+}
+
+let data = {
+billNumber: billNo.value.trim(),
+name: nameField.value.trim(),
+mobile: mobile.value.trim(),
+total: parseFloat(total.value)||0,
+received: parseFloat(received.value)||0
+};
+
+await fetch("/save-bill",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(data)
+});
+
+clearForm();
+loadBills();
+}
+
+function clearForm(){
+billNo.value="";
+nameField.value="";
+mobile.value="";
+total.value="";
+received.value="";
+}
+
+// 🔥 RENDER TABLE
+function render(){
+
+let table="";
+let tAmount=0;
+let tReceived=0;
+let tBalance=0;
+let todayTotal=0;
+
+let searchVal=search.value.toLowerCase();
+let filter=filterDate.value;
+
+bills.forEach((b)=>{
+
+let bDate=new Date(b.date);
+let balance=b.total-b.received;
+
+if(searchVal){
+if(!(b.billNumber.toLowerCase().includes(searchVal) ||
+b.name.toLowerCase().includes(searchVal) ||
+b.mobile.toLowerCase().includes(searchVal))) return;
+}
+
+if(filter){
+let fDate=new Date(filter).toDateString();
+if(bDate.toDateString()!==fDate) return;
+}
+
+tAmount+=b.total;
+tReceived+=b.received;
+tBalance+=balance;
+
+if(bDate.toDateString()===new Date().toDateString()){
+todayTotal+=b.received;
+}
+
+table+=`
+<tr>
+<td>${b.billNumber}</td>
+<td>${b.name}</td>
+<td>${b.mobile}</td>
+<td>${b.total}</td>
+<td>${b.received}</td>
+<td>${balance}</td>
+<td>${bDate.toLocaleString()}</td>
+<td>
+<button onclick="shareWA('${b._id}')">WA</button>
+<button onclick="downloadPDF('${b._id}')">PDF</button>
+</td>
+</tr>
+`;
+});
+
+billTable.innerHTML=table;
+
+document.getElementById("totalAmount").innerText=tAmount;
+document.getElementById("totalReceived").innerText=tReceived;
+document.getElementById("totalBalance").innerText=tBalance;
+document.getElementById("todayCollection").innerText=todayTotal;
+}
+
+// 🔥 WHATSAPP SHARE
+function shareWA(id){
+let b=bills.find(x=>x._id===id);
+let balance=b.total-b.received;
+
+let message =
+`Receipt
+Bill No: ${b.billNumber}
+Customer: ${b.name}
+Total: ${b.total}
+Received: ${b.received}
+Balance: ${balance}`;
+
+window.open(`https://wa.me/?text=${encodeURIComponent(message)}`);
+}
+
+// 🔥 PDF DOWNLOAD
+function downloadPDF(id){
+
+const { jsPDF } = window.jspdf;
+let doc = new jsPDF();
+let b=bills.find(x=>x._id===id);
+let balance=b.total-b.received;
+
+doc.setFillColor(255,87,34);
+doc.rect(0,0,210,30,"F");
+doc.setTextColor(255,255,255);
+doc.setFontSize(18);
+doc.text("COMPANY NAME",70,20);
+
+doc.setTextColor(0,0,0);
+doc.setFontSize(16);
+doc.text("PAYMENT RECEIPT",65,50);
+
+doc.setFontSize(12);
+doc.text("Bill No: "+b.billNumber,20,70);
+doc.text("Customer: "+b.name,20,80);
+doc.text("Mobile: "+b.mobile,20,90);
+doc.text("Total Amount: "+b.total,20,110);
+doc.text("Received: "+b.received,20,120);
+doc.text("Balance: "+balance,20,130);
+doc.text("Date: "+new Date(b.date).toLocaleString(),20,150);
+
+doc.line(20,160,190,160);
+doc.text("Thank You For Your Business!",60,175);
+
+doc.save("Receipt_"+b.billNumber+".pdf");
+}
+
+// 🔥 INITIAL LOAD
+loadBills();
+
+</script>
+
+</body>
+</html>
