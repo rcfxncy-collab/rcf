@@ -9,7 +9,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(express.static("public"));
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -104,3 +104,4 @@ app.delete("/delete-bill/:id", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server Running..."));
+
