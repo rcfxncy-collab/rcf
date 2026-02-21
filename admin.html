@@ -275,6 +275,35 @@ if(bDate.toDateString()===new Date().toDateString()){
 todayTotal+=b.received;
 }
 
+function downloadExcel(){
+
+if(bills.length === 0){
+alert("No data available!");
+return;
+}
+
+let excelData = bills.map(b => {
+let balance = b.total - b.received;
+
+return {
+"Bill Number": b.billNumber,
+"Customer Name": b.name,
+"Mobile": b.mobile,
+"Total Amount": b.total,
+"Received Amount": b.received,
+"Balance": balance,
+"Date": new Date(b.date).toLocaleString()
+};
+});
+
+let worksheet = XLSX.utils.json_to_sheet(excelData);
+let workbook = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(workbook, worksheet, "Bills");
+
+XLSX.writeFile(workbook, "Bills_Report.xlsx");
+
+}
+
 table+=`
 <tr>
 <td>${b.billNumber}</td>
@@ -359,4 +388,5 @@ loadBills();
 </body>
 
 </html>
+
 
