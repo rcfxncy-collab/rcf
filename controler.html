@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coming Soon</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: linear-gradient(-45deg, #667eea, #764ba2, #6a11cb, #2575fc);
+    background-size:400% 400%;
+    animation: gradientBG 10s ease infinite;
+    color:white;
+}
+
+@keyframes gradientBG{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+}
+
+.container{
+    text-align:center;
+    padding:40px;
+    width:90%;
+    max-width:520px;
+    backdrop-filter: blur(15px);
+    background: rgba(255,255,255,0.1);
+    border-radius:20px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.3);
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-12px);}
+}
+
+h1{
+    font-size:48px;
+    margin-bottom:10px;
+    letter-spacing:2px;
+}
+
+p{
+    opacity:0.9;
+    margin-bottom:30px;
+}
+
+.countdown{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:30px;
+    flex-wrap:wrap;
+}
+
+.time-box{
+    flex:1;
+    margin:6px;
+    padding:16px;
+    border-radius:12px;
+    background: rgba(255,255,255,0.15);
+}
+
+.time-box span{
+    display:block;
+    font-size:30px;
+    font-weight:bold;
+}
+
+.subscribe{
+    display:flex;
+    gap:10px;
+}
+
+.subscribe input{
+    flex:1;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    outline:none;
+}
+
+.subscribe button{
+    padding:12px 18px;
+    border:none;
+    border-radius:8px;
+    background:#ff7a18;
+    color:white;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.subscribe button:hover{
+    background:#ff5500;
+    transform:scale(1.05);
+}
+
+@media(max-width:500px){
+    h1{font-size:34px;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Coming Soon</h1>
+    <p>We are launching very soon 🚀</p>
+
+    <div class="countdown">
+        <div class="time-box"><span id="days">00</span>Days</div>
+        <div class="time-box"><span id="hours">00</span>Hours</div>
+        <div class="time-box"><span id="minutes">00</span>Minutes</div>
+        <div class="time-box"><span id="seconds">00</span>Seconds</div>
+    </div>
+
+    <div class="subscribe">
+        <input type="email" placeholder="Enter your email">
+        <button onclick="notify()">Notify Me</button>
+    </div>
+</div>
+
+<script>
+// 🔴 SET YOUR LAUNCH DATE HERE
+const launchDate = new Date("April 31, 2026 00:00:00").getTime();
+
+const timer = setInterval(function(){
+
+    const now = new Date().getTime();
+    const distance = launchDate - now;
+
+    const days = Math.floor(distance / (1000*60*60*24));
+    const hours = Math.floor((distance % (1000*60*60*24)) / (1000*60*60));
+    const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
+    const seconds = Math.floor((distance % (1000*60)) / 1000);
+
+    document.getElementById("days").innerHTML = days;
+    document.getElementById("hours").innerHTML = hours;
+    document.getElementById("minutes").innerHTML = minutes;
+    document.getElementById("seconds").innerHTML = seconds;
+
+    if(distance < 0){
+        clearInterval(timer);
+        document.querySelector(".countdown").innerHTML = "<h2>🚀 We Are Live!</h2>";
+    }
+
+}, 1000);
+
+function notify(){
+    alert("Thanks! We will notify you.");
+}
+</script>
+
+</body>
+</html>
