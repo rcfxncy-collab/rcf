@@ -39,8 +39,8 @@ app.get("/", (req, res) => {
 });
 
 // CONTROLER
-app.get("/controller", (req, res) => {
-    res.sendFile(path.join(__dirname, "controller.html"));
+app.get("/controler", (req, res) => {
+    res.sendFile(path.join(__dirname, "controler.html"));
 });
 
 // ADMIN LOGIN
@@ -109,5 +109,6 @@ app.delete("/delete-bill/:id", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server Running..."));
+
 
 
