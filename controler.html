@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RCFANCY-PRODUCTS</title>
+
+<style>
+body{
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background:#f5f5f5;
+}
+
+header{
+  text-align:center;
+  padding:20px;
+  font-size:28px;
+  background:black;
+  color:white;
+}
+
+.container{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:25px;
+  padding:30px;
+}
+
+.card{
+  background:white;
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0 8px 20px rgba(0,0,0,0.1);
+  transition:0.4s;
+}
+
+.card:hover{
+  transform:translateY(-10px);
+}
+
+.card img{
+  width:100%;
+  height:280px;
+  object-fit:cover;
+}
+
+.card-content{
+  padding:15px;
+  text-align:center;
+}
+
+.price{
+  color:#e91e63;
+  font-weight:bold;
+}
+
+button{
+  padding:8px 15px;
+  border:none;
+  background:black;
+  color:white;
+  border-radius:20px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#e91e63;
+}
+
+/* Popup Modal */
+
+.modal{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  justify-content:center;
+  align-items:center;
+  animation:fadeIn 0.3s;
+}
+
+.modal-content{
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  width:90%;
+  max-width:400px;
+  text-align:center;
+  animation:zoomIn 0.3s;
+}
+
+.modal img{
+  width:100%;
+  height:300px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+.close{
+  float:right;
+  font-size:20px;
+  cursor:pointer;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+
+@keyframes zoomIn{
+  from{transform:scale(0.7);}
+  to{transform:scale(1);}
+}
+</style>
+</head>
+
+<body>
+
+<header>PRODUCTS</header>
+
+<div class="container">
+
+<div class="card">
+<img src="/p1.jpeg">
+<div class="card-content">
+<h3>Stylish Handbag</h3>
+<div class="price">₹899</div>
+<button onclick="openModal('/p1.jpeg','Stylish Handbag','899')">View</button>
+</div>
+</div>
+
+<div class="card">
+<img src="/p2.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p2.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+
+<div class="card">
+<img src="/p3.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p3.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p4.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p4.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p5.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p5.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p6.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p6.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p7.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p7.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p8.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p8.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p9.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p9.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p10.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p10.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p11.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p11.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p12.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p12.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p13.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p13.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p14.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p14.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p15.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p15.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p16.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p16.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p17.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p17.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p18.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p18.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p19.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p19.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p20.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p20.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p21.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p21.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p22.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p22.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p23.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p23.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p24.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p24.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p25.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p25.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p26.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p26.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p27.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p27.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p28.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p28.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p29.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p29.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p30.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p30.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p31.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p31.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p32.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p32.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p33.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p33.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p34.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p34.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p35.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p35.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p36.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p36.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p37.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p37.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p38.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p38.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p39.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p39.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p40.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p40.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p41.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p41.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p42.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p42.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p43.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p43.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p44.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p44.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p45.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p45.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p46.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p46.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p47.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p47.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+ 
+<div class="card">
+<img src="/p48.jpeg">
+<div class="card-content">
+<h3>Designer Earrings</h3>
+<div class="price">₹299</div>
+<button onclick="openModal('/p48.jpeg','Designer Earrings','299')">View</button>
+</div>
+</div>
+  
+</div>
+
+<!-- Popup Modal -->
+<div class="modal" id="productModal">
+<div class="modal-content">
+<span class="close" onclick="closeModal()">&times;</span>
+<img id="modalImg">
+<h3 id="modalTitle"></h3>
+<p id="modalPrice"></p>
+<button>Order Now</button>
+</div>
+</div>
+
+<script>
+function openModal(img,title,price){
+  document.getElementById("productModal").style.display="flex";
+  document.getElementById("modalImg").src=img;
+  document.getElementById("modalTitle").innerText=title;
+  document.getElementById("modalPrice").innerText="₹"+price;
+}
+
+function closeModal(){
+  document.getElementById("productModal").style.display="none";
+}
+</script>
+
+</body>
+</html>
