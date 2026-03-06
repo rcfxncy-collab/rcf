@@ -413,9 +413,10 @@ button:hover{
 <script>
 
 function orderNow(){
+  var img=document.getElementById("modalImg").innerText;
   var title=document.getElementById("modalTitle").innerText;
   var price=document.getElementById("modalPrice").innerText;
-  var message="Hello, I want to order: "+title+" at price "+price+". Please let me know the details.";
+  var message=img+"Hello, I want to order: "+title+" at price "+price+". Please let me know the details.";
   var url="https://wa.me/917418592010?text="+encodeURIComponent(message);
   window.location.href=url;
 }
@@ -435,3 +436,4 @@ function closeModal(){
 
 </body>
   </html>
+
