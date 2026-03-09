@@ -99,6 +99,14 @@ app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
 });
 
+// PROTECTED product ADMIN
+app.get("/product-admin", (req, res) => {
+    if (!req.session.loggedIn) {
+        return res.redirect("/adminuser");
+    }
+    res.sendFile(path.join(__dirname, "product-admin.html"));
+});
+
 // 🔥 SAVE BILL API
 app.post("/save-bill", async (req, res) => {
 
@@ -209,6 +217,7 @@ image:"/uploads/"+filename
 });
 
 app.listen(3000, () => console.log("Server Running..."));
+
 
 
 
