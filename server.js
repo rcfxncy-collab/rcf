@@ -99,14 +99,6 @@ app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-// PROTECTED ADMIN
-app.get("/product-admin", (req, res) => {
-    if (!req.session.loggedIn) {
-        return res.redirect("/adminuser");
-    }
-    res.sendFile(path.join(__dirname, "product-admin.html"));
-});
-
 // 🔥 SAVE BILL API
 app.post("/save-bill", async (req, res) => {
 
@@ -202,11 +194,7 @@ app.put("/api/update-product/:id", async (req,res)=>{
 
 
 app.post("/upload-image", upload.single("image"), async (req,res)=>{
-try {
 
-if(!req.file){ return res.status(400).json({message:"No file uploaded"});    
-
-}
 const filename = Date.now()+".jpg";
 
 await sharp(req.file.buffer)
@@ -218,12 +206,7 @@ res.json({
 image:"/uploads/"+filename
 });
 
-}catch(err){
-    console.log(err);
-    res.status(500).json({message:"image upload failed"});
-}
 });
 
 app.listen(3000, () => console.log("Server Running..."));
-
 
