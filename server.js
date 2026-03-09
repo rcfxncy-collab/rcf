@@ -140,7 +140,7 @@ app.delete("/delete-bill/:id", async (req, res) => {
 
 app.get("/product-admin", (req, res) => {
 
-    res.sendFile(path.join(__dirname, "productadmin.html"));
+    res.sendFile(path.join(__dirname, "product-admin.html"));
 });
 
 
@@ -209,5 +209,6 @@ image:"/uploads/"+filename
 });
 
 app.listen(3000, () => console.log("Server Running..."));
+
 
 
