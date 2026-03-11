@@ -416,7 +416,7 @@ function orderNow(){
   var img=document.getElementById("modalImg").src;
   var title=document.getElementById("modalTitle").innerText;
   var price=document.getElementById("modalPrice").innerText;
-  var message=img+"Hello, I want to order: "+title+" at price "+price+". Please let me know the details.";
+  var message="Hello, I want to order this product:\n\n"+title+"\nPrice: "+price+"\n\n"+img+"\n\nPlease let me know the next details.";
   var url="https://wa.me/917418592010?text="+encodeURIComponent(message);
   window.location.href=url;
 }
@@ -469,5 +469,6 @@ loadProducts();
 
 </body>
   </html>
+
 
 
