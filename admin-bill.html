@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Bill Admin Panel</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f6fa;
+padding:20px;
+}
+
+h2{
+text-align:center;
+}
+
+.panel{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
+margin-bottom:20px;
+animation:fadeIn 0.6s;
+}
+
+input{
+padding:10px;
+margin:5px;
+border:1px solid #ddd;
+border-radius:5px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+background:#007bff;
+color:white;
+}
+
+button.delete{
+background:#ff3b3b;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:center;
+}
+
+img{
+width:60px;
+border-radius:5px;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(10px)}
+to{opacity:1}
+}
+
+@media(max-width:600px){
+
+table{
+font-size:12px;
+}
+
+input{
+width:100%;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Admin Bill Panel</h2>
+
+<div class="panel">
+
+<input id="mobile" placeholder="Mobile Number">
+
+<input id="billNumber" placeholder="Bill Number">
+
+<input type="file" id="image">
+
+<button onclick="addBill()">Add Bill</button>
+
+</div>
+
+<div class="panel">
+
+<input id="search" placeholder="Search Bill" onkeyup="loadBills()">
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Mobile</th>
+<th>Bill</th>
+<th>Image</th>
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody id="billTable"></tbody>
+
+</table>
+
+<script>
+
+async function addBill(){
+
+const mobile=document.getElementById("mobile").value;
+const billNumber=document.getElementById("billNumber").value;
+const image=document.getElementById("image").files[0];
+
+const form=new FormData();
+
+form.append("mobile",mobile);
+form.append("billNumber",billNumber);
+form.append("image",image);
+
+await fetch("/admin/add-bill",{
+method:"POST",
+body:form
+});
+
+loadBills();
+
+}
+
+async function loadBills(){
+
+const search=document.getElementById("search").value.toLowerCase();
+
+const res=await fetch("/get-bills");
+
+const bills=await res.json();
+
+let html="";
+
+bills.forEach(b=>{
+
+if(search && !b.billNumber.includes(search) && !b.mobile.includes(search)) return;
+
+html+=`
+<tr>
+
+<td>${b.mobile}</td>
+
+<td>${b.billNumber}</td>
+
+<td><img src="${b.image}"></td>
+
+<td>
+
+<button onclick="editBill(${b.id})">Edit</button>
+
+<button class="delete" onclick="deleteBill(${b.id})">Delete</button>
+
+</td>
+
+</tr>
+`;
+
+});
+
+document.getElementById("billTable").innerHTML=html;
+
+}
+loadBills();
+
+async function deleteBill(id){
+
+if(!confirm("Delete this bill?")) return;
+
+await fetch("/admin/delete-bill",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({id})
+
+});
+
+loadBills();
+
+}
+
+async function editBill(id){
+
+const mobile=prompt("New Mobile");
+
+const billNumber=prompt("New Bill Number");
+
+if(!mobile || !billNumber) return;
+
+await fetch("/admin/edit-bill",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+id,
+mobile,
+billNumber
+})
+
+});
+
+loadBills();
+
+}
+
+loadBills();
+
+</script>
+
+</body>
+</html>
