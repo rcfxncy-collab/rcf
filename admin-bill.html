@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Bill Dashboard</title>
+
+<style>
+
+body{
+font-family:Arial, Helvetica, sans-serif;
+background:#f4f6f9;
+margin:0;
+padding:0;
+}
+
+header{
+background:#111;
+color:white;
+padding:15px;
+text-align:center;
+font-size:22px;
+}
+
+.container{
+padding:20px;
+max-width:1200px;
+margin:auto;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+margin-bottom:20px;
+animation:fadeIn 0.5s ease;
+}
+
+input,button{
+padding:10px;
+margin:5px;
+border-radius:5px;
+border:1px solid #ccc;
+}
+
+button{
+background:#111;
+color:white;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:#444;
+transform:scale(1.05);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+table th, table td{
+border:1px solid #ddd;
+padding:10px;
+text-align:center;
+}
+
+table th{
+background:#111;
+color:white;
+}
+
+img{
+max-width:100px;
+border-radius:6px;
+}
+
+.stats{
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+}
+
+.stat-box{
+flex:1;
+background:white;
+padding:20px;
+border-radius:10px;
+text-align:center;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.search-box{
+margin-bottom:10px;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+@media(max-width:768px){
+
+table,thead,tbody,th,td,tr{
+display:block;
+}
+
+th{
+display:none;
+}
+
+td{
+border:none;
+border-bottom:1px solid #ddd;
+text-align:right;
+padding-left:50%;
+position:relative;
+}
+
+td::before{
+position:absolute;
+left:10px;
+top:10px;
+font-weight:bold;
+text-align:left;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+Admin Bill Dashboard
+</header>
+
+<div class="container">
+
+<div class="stats">
+
+<div class="stat-box">
+<h3>Total Bills</h3>
+<p id="totalBills">0</p>
+</div>
+
+<div class="stat-box">
+<h3>Today Upload</h3>
+<p id="todayBills">0</p>
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>Upload Bill</h3>
+
+<input type="text" id="mobile" placeholder="Mobile Number">
+<input type="text" id="billNumber" placeholder="Bill Number">
+<input type="file" id="billImage">
+
+<button onclick="uploadBill()">Upload</button>
+
+</div>
+
+<div class="card">
+
+<div class="search-box">
+
+<input type="text" id="search" placeholder="Search Bill Number">
+
+<button onclick="searchBill()">Search</button>
+
+<button onclick="loadBills()">Reset</button>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Bill No</th>
+<th>Mobile</th>
+<th>Date</th>
+<th>Image</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="billTable"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+let bills=[];
+
+function uploadBill(){
+
+const mobile=document.getElementById("mobile").value;
+const billNumber=document.getElementById("billNumber").value;
+const image=document.getElementById("billImage").files[0];
+
+const formData=new FormData();
+
+formData.append("mobile",mobile);
+formData.append("billNumber",billNumber);
+formData.append("image",image);
+
+fetch("/admin/upload-bill",{
+method:"POST",
+body:formData
+})
+.then(res=>res.json())
+.then(data=>{
+alert("Bill Uploaded");
+loadBills();
+});
+
+}
+
+function loadBills(){
+
+fetch("/admin/bills")
+.then(res=>res.json())
+.then(data=>{
+
+bills=data;
+
+document.getElementById("totalBills").innerText=bills.length;
+
+let table="";
+
+bills.forEach(b=>{
+
+table+=`
+<tr>
+<td>${b.billNumber}</td>
+<td>${b.mobile}</td>
+<td>${new Date(b.date).toLocaleDateString()}</td>
+
+<td>
+<img src="/bills/${b.image}">
+</td>
+
+<td>
+
+<button onclick="viewBill('${b.image}')">View</button>
+
+<button onclick="editBill('${b._id}')">Edit</button>
+
+<button onclick="deleteBill('${b._id}')">Delete</button>
+
+</td>
+
+</tr>
+`;
+
+});
+
+document.getElementById("billTable").innerHTML=table;
+
+});
+
+}
+
+function searchBill(){
+
+const search=document.getElementById("search").value;
+
+const filtered=bills.filter(b=>b.billNumber.includes(search));
+
+let table="";
+
+filtered.forEach(b=>{
+
+table+=`
+<tr>
+<td>${b.billNumber}</td>
+<td>${b.mobile}</td>
+<td>${new Date(b.date).toLocaleDateString()}</td>
+<td><img src="/bills/${b.image}"></td>
+
+<td>
+
+<button onclick="viewBill('${b.image}')">View</button>
+
+<button onclick="editBill('${b._id}')">Edit</button>
+
+<button onclick="deleteBill('${b._id}')">Delete</button>
+
+</td>
+
+</tr>
+`;
+
+});
+
+document.getElementById("billTable").innerHTML=table;
+
+}
+
+function viewBill(image){
+
+window.open("/bills/"+image);
+
+}
+
+function deleteBill(id){
+
+if(confirm("Delete this bill?")){
+
+fetch("/admin/delete-bill/"+id,{
+method:"DELETE"
+})
+.then(res=>res.json())
+.then(data=>{
+alert("Bill Deleted");
+loadBills();
+});
+
+}
+
+}
+
+function editBill(id){
+
+const newMobile=prompt("Enter new mobile");
+
+const newBill=prompt("Enter new bill number");
+
+fetch("/admin/update-bill/"+id,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+mobile:newMobile,
+billNumber:newBill
+})
+})
+.then(res=>res.json())
+.then(data=>{
+alert("Bill Updated");
+loadBills();
+});
+
+}
+
+loadBills();
+
+</script>
+
+</body>
+</html>
