@@ -87,9 +87,6 @@ app.get("/nwork", (req, res) => {
     res.sendFile(path.join(__dirname, "nwork.html"));
 });
 
-app.get("/admin-bill", (req, res) => {
-    res.sendFile(path.join(__dirname, "admin-bill.html"));
-});
 
 app.post("/login", (req, res) => {
 
@@ -319,3 +316,4 @@ res.json({status:"updated"});
 
 
 app.listen(3000, () => console.log("Server Running..."));
+
