@@ -87,6 +87,12 @@ app.get("/nwork", (req, res) => {
     res.sendFile(path.join(__dirname, "nwork.html"));
 });
 
+app.get("/gallery", (req, res) => {
+    res.sendFile(path.join(__dirname, "gallery.html"));
+});
+
+
+
 
 app.post("/login", (req, res) => {
 
