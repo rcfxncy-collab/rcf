@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RC Fancy | Shop Gallery</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background: linear-gradient(-45deg, #30213f, #9f858a, #31505b, #f5f5f5);
+background-size:400% 400%;
+animation:gradientMove 12s ease infinite;
+}
+
+/* Animation */
+
+@keyframes gradientMove{
+
+0%{
+background-position:0% 50%;
+}
+
+50%{
+background-position:100% 50%;
+}
+
+100%{
+background-position:0% 50%;
+}
+
+}
+
+/* NAVBAR */
+
+.navbar{
+background:#111;
+color:white;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 20px;
+}
+
+.navbar h2{
+margin:0;
+font-size:20px;
+}
+
+.nav-links a{
+color:white;
+margin-left:20px;
+text-decoration:none;
+font-size:15px;
+}
+
+.nav-links a:hover{
+color:#f39c12;
+}
+
+/* TITLE */
+
+.title{
+text-align:center;
+padding:40px 10px;
+font-size:32px;
+font-weight:bold;
+}
+
+/* SECTION */
+
+.section{
+display:flex;
+align-items:center;
+justify-content:center;
+padding:40px;
+gap:40px;
+flex-wrap:wrap;
+}
+
+/* IMAGE */
+
+.section img{
+width:420px;
+max-width:100%;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* TEXT */
+
+.text{
+max-width:500px;
+font-size:17px;
+line-height:1.7;
+color:#333;
+}
+
+/* ANIMATION */
+
+.fade-left{
+opacity:0;
+transform:translateX(-50px);
+animation:fadeLeft 1s forwards;
+}
+
+.fade-right{
+opacity:0;
+transform:translateX(50px);
+animation:fadeRight 1s forwards;
+}
+
+@keyframes fadeLeft{
+to{
+opacity:1;
+transform:translateX(0);
+}
+}
+
+@keyframes fadeRight{
+to{
+opacity:1;
+transform:translateX(0);
+}
+}
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+.section{
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    padding: 20px;
+
+}
+.section img{
+    width: 40%;
+    border-radius: 12px;
+    object-fit: cover;
+    transition: 1s;
+
+}
+.section img:hover{
+    transform: scale(1.05);
+}
+.text{
+    width: 55%;
+    font-size: 14px;
+
+}
+.text p{
+    margin: 0;
+    text-align: justify;
+}
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+
+<div class="navbar">
+<h2>RCF</h2>
+
+<div class="nav-links">
+<a href="/">Home</a>
+
+<a href="/controler">Products</a>
+
+</div>
+</div>
+
+
+<!-- TITLE -->
+
+<div class="title">
+Our Shop Gallery
+</div>
+
+
+<!-- SECTION 1 -->
+
+<div class="section">
+
+<div class="text fade-left">
+<p>
+Welcome to <b>RC Fancy</b> — your trusted fashion destination.  
+Our shop offers a wide collection of fancy accessories, handbags, jewellery, and stylish items for every occasion.  
+
+We focus on quality products, modern designs, and affordable prices for our customers.
+</p>
+</div>
+
+<img src="p12.jpeg" class="fade-right">
+
+</div>
+
+
+<!-- SECTION 2 -->
+
+<div class="section">
+
+<img src="p12.jpeg" class="fade-left">
+
+<div class="text fade-right">
+<p>
+At RC Fancy, we continuously update our collections with the latest trends.  
+Our store environment is friendly and comfortable so customers can enjoy shopping easily.  
+
+We believe that fashion should be stylish, affordable, and accessible to everyone.
+</p>
+</div>
+
+</div>
+
+
+<!-- SECTION 3 -->
+
+<div class="section">
+
+<div class="text fade-left">
+<p>
+Our goal is to provide the best customer experience and build long-term trust.  
+Thousands of happy customers have already visited our store and enjoyed our collections.  
+
+Visit <b>www.rcfancy.online</b> to explore more products and offers.
+</p>
+</div>
+
+<img src="p12.jpeg" class="fade-right">
+
+</div>
+
+<!-- SECTION 4 -->
+
+<div class="section">
+
+<img src="p12.jpeg" class="fade-left">
+
+<div class="text fade-right">
+<p>
+At RC Fancy, we continuously update our collections with the latest trends.  
+Our store environment is friendly and comfortable so customers can enjoy shopping easily.  
+
+We believe that fashion should be stylish, affordable, and accessible to everyone.
+</p>
+</div>
+
+</div>
+
+
+<!-- SECTION 5 -->
+
+<div class="section">
+
+<div class="text fade-left">
+<p>
+Our goal is to provide the best customer experience and build long-term trust.  
+Thousands of happy customers have already visited our store and enjoyed our collections.  
+
+Visit <b>www.rcfancy.online</b> to explore more products and offers.
+</p>
+</div>
+
+<img src="p12.jpeg" class="fade-right">
+
+</div>
+
+
+<!-- SECTION 6 -->
+
+<div class="section">
+
+<img src="p12.jpeg" class="fade-left">
+
+<div class="text fade-right">
+<p>
+At RC Fancy, we continuously update our collections with the latest trends.  
+Our store environment is friendly and comfortable so customers can enjoy shopping easily.  
+
+We believe that fashion should be stylish, affordable, and accessible to everyone.
+</p>
+</div>
+
+</div>
+
+
+
+
+</div>
+
+</body>
+</html>
