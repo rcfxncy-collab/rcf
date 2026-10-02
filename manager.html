@@ -601,13 +601,23 @@ async function signInWithGoogle(){
         await pushStateToCloud();
       }
     } else {
-      await pushStateToCloud();
+      if(state.managerUsername) await pushStateToCloud();
     }
     startCloudListener();
     saveState(); closeModal(); render();
     showSuccessToast('Signed in as '+__fbUser.email);
   }catch(err){
     if(err && err.code!=='auth/popup-closed-by-user') alert('Google Sign-In failed: '+(err.message||err));
+  }
+}
+async function restoreWithGoogle(){
+  await signInWithGoogle();
+  if(!state.managerUsername){
+    if(__cloudUnsub){ __cloudUnsub(); __cloudUnsub = null; }
+    if(fbAvailable) fbAuth.signOut().catch(()=>{});
+    __fbUser = null; state.cloudUserEmail = null;
+    alert('No saved shop found for this Google account. On your first device, go to Settings and tap "Sign in with Google" once so the data uploads, then try again here.');
+    render();
   }
 }
 function signOutGoogle(){
@@ -840,11 +850,15 @@ function renderSetup(){
       <label>Manager password</label><input type="password" id="suPass" style="margin-bottom:12px;">
       <label>Recovery PIN (4-6 digits, for Forgot Password later)</label><input type="password" id="suRecPin" inputmode="numeric" maxlength="6" style="margin-bottom:18px;" placeholder="e.g. 1234">
       <button class="btn btn-green btn-block" id="suBtn">Create Manager Account</button>
+      <div style="text-align:center; margin:14px 0 8px; color:var(--muted); font-size:12px;">OR</div>
+      <button class="btn btn-outline btn-block" id="suGoogleBtn">🔵 Already have a shop? Restore with Google</button>
       <div class="auth-err" id="suErr"></div>
     </div>
   </div>`;
 }
 function attachSetupHandlers(){
+  const suGoogle = document.getElementById('suGoogleBtn');
+  if(suGoogle) suGoogle.addEventListener('click', restoreWithGoogle);
   document.getElementById('suBtn').addEventListener('click', ()=>{
     const shop = document.getElementById('suShop').value.trim();
     const name = document.getElementById('suName').value.trim();
@@ -957,6 +971,7 @@ function renderLogin(){
         </div>
         ${state.loginError ? `<div class="auth-err">${state.loginError}</div>` : ''}
         <div class="login-footer-link">Don't have an account? <a id="liCreateShopBtn">Create New Shop →</a></div>
+        <div class="login-footer-link" style="margin-top:8px;">New device? <a id="liRestoreBtn">Restore with Google →</a></div>
       </div>
     </div>
   </div>`;
@@ -990,6 +1005,8 @@ function attachLoginHandlers(){
       alert('Fingerprint login is only available inside the Nexora Android app.');
     }
   });
+  const restoreBtn = document.getElementById('liRestoreBtn');
+  if(restoreBtn) restoreBtn.addEventListener('click', restoreWithGoogle);
   const createShopBtn = document.getElementById('liCreateShopBtn');
   if(createShopBtn) createShopBtn.addEventListener('click', ()=>openModal(`
     <h3>Create a New Shop</h3>
