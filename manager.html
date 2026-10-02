@@ -10,6 +10,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --ink:#16241C; --paper:#F3F6F4; --paper-shadow:#E8EFEA;
@@ -461,9 +464,10 @@ let state = {
     taxSummary: true,
     showQrImage: false, showTotalSave: true, paymentSummary: false, amountInWords: true,
     qtyDecimals: 2, amtDecimals: 2
-  }
+  },
+  cloudUserEmail: null
 };
-const APP_VERSION = "v7.2";
+const APP_VERSION = "v7.1";
 const LOCAL_KEY = "kadai-billing-data";
 
 async function loadState(){
@@ -481,6 +485,20 @@ async function loadState(){
     }
   }catch(e){ console.log('fresh start'); }
   if(window.AndroidBridge && window.AndroidBridge.setScreenshotBlocked && state.screenshotBlock){ try{ window.AndroidBridge.setScreenshotBlocked(true); }catch(e){} }
+  try{ const {currentBill, tab, session, loginRole, loginError, navOpen, pinUnlocked, pendingOtp, settingsSubPage, ...persist} = state; __lastPushedJson = JSON.stringify(persist); }catch(e){}
+  if(fbAvailable){
+    fbAuth.onAuthStateChanged(user=>{
+      __fbUser = user;
+      if(user){
+        state.cloudUserEmail = user.email;
+        startCloudListener();
+        render();
+      } else {
+        if(__cloudUnsub){ __cloudUnsub(); __cloudUnsub = null; }
+        if(state.cloudUserEmail){ state.cloudUserEmail = null; render(); }
+      }
+    });
+  }
   render();
   hideSplash();
 }
@@ -495,8 +513,111 @@ async function saveState(){
     const json = JSON.stringify(persist);
     if(S){ await S.set('shop-data', json, false); }
     else { localStorage.setItem(LOCAL_KEY, json); }
-    if(typeof scheduleDesktopSave==='function') scheduleDesktopSave();
+    scheduleCloudPush();
   }catch(e){ console.error('save failed', e); }
+}
+
+// ============ GOOGLE ACCOUNT SYNC (Firebase Auth + Firestore) ============
+const firebaseConfig = {
+  apiKey: "AIzaSyAY_hyNqGYfK5FDOLvmbODjvho8lH02sbk",
+  authDomain: "nexora-57beb.firebaseapp.com",
+  projectId: "nexora-57beb",
+  storageBucket: "nexora-57beb.firebasestorage.app",
+  messagingSenderId: "1037759293904",
+  appId: "1:1037759293904:web:7d73c8bdc594a0261071d5"
+};
+let fbAuth = null, fbDb = null, fbAvailable = false;
+try{
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+    fbAvailable = true;
+  }
+}catch(e){ console.log('Firebase init failed', e); }
+
+let __fbUser = null;
+let __lastPushedJson = '';
+let __cloudPushTimer = null;
+let __cloudUnsub = null;
+
+function scheduleCloudPush(){
+  if(!fbAvailable || !__fbUser) return;
+  clearTimeout(__cloudPushTimer);
+  __cloudPushTimer = setTimeout(pushStateToCloud, 1200);
+}
+async function pushStateToCloud(){
+  if(!fbAvailable || !__fbUser) return;
+  try{
+    const {currentBill, tab, session, loginRole, loginError, navOpen, pinUnlocked, pendingOtp, settingsSubPage, ...persist} = state;
+    const json = JSON.stringify(persist);
+    if(json === __lastPushedJson) return;
+    __lastPushedJson = json;
+    await fbDb.collection('users').doc(__fbUser.uid).set({ data: json, updatedAt: Date.now(), email: __fbUser.email }, {merge:true});
+  }catch(e){ console.log('Cloud push failed', e); }
+}
+function startCloudListener(){
+  if(!fbAvailable || !__fbUser) return;
+  if(__cloudUnsub){ __cloudUnsub(); __cloudUnsub = null; }
+  __cloudUnsub = fbDb.collection('users').doc(__fbUser.uid).onSnapshot(doc=>{
+    if(!doc.exists) return;
+    const remote = doc.data();
+    if(!remote || !remote.data || remote.data === __lastPushedJson) return;
+    try{
+      const remoteData = JSON.parse(remote.data);
+      __lastPushedJson = remote.data;
+      const keepSession = state.session, keepTab = state.tab, keepNavOpen = state.navOpen;
+      Object.assign(state, remoteData);
+      state.session = keepSession; state.tab = keepTab; state.navOpen = keepNavOpen;
+      localStorage.setItem(LOCAL_KEY, remote.data);
+      render();
+      showSuccessToast('Synced from your account');
+    }catch(e){ console.log('apply remote update failed', e); }
+  }, err=>console.log('listener error', err));
+}
+async function signInWithGoogle(){
+  if(!fbAvailable){ alert('Google Sign-In needs an internet connection, and this page must be hosted (not opened as a local file) for Google login to work.'); return; }
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await fbAuth.signInWithPopup(provider);
+    __fbUser = result.user;
+    state.cloudUserEmail = __fbUser.email;
+    const doc = await fbDb.collection('users').doc(__fbUser.uid).get();
+    if(doc.exists && doc.data().data){
+      const hasLocalData = state.bills.length || state.products.length || state.customers.length;
+      let useRemote = true;
+      if(hasLocalData){
+        useRemote = confirm(`Found existing data in your Google account (${__fbUser.email}). Load it and replace the data on THIS device? Press Cancel to instead upload this device's current data to your account.`);
+      }
+      if(useRemote){
+        const remoteData = JSON.parse(doc.data().data);
+        __lastPushedJson = doc.data().data;
+        const keepSession = state.session;
+        Object.assign(state, remoteData);
+        state.session = keepSession; state.cloudUserEmail = __fbUser.email; state.tab = 'dashboard';
+        localStorage.setItem(LOCAL_KEY, doc.data().data);
+        saveState();
+      } else {
+        await pushStateToCloud();
+      }
+    } else {
+      await pushStateToCloud();
+    }
+    startCloudListener();
+    saveState(); closeModal(); render();
+    showSuccessToast('Signed in as '+__fbUser.email);
+  }catch(err){
+    if(err && err.code!=='auth/popup-closed-by-user') alert('Google Sign-In failed: '+(err.message||err));
+  }
+}
+function signOutGoogle(){
+  if(!confirm('Sign out? Local data on this device stays as-is, but it will stop syncing to your Google account.')) return;
+  if(__cloudUnsub){ __cloudUnsub(); __cloudUnsub = null; }
+  if(fbAvailable) fbAuth.signOut().catch(()=>{});
+  __fbUser = null;
+  state.cloudUserEmail = null;
+  saveState(); render();
+  showSuccessToast('Signed out');
 }
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -1860,6 +1981,7 @@ function renderInventory(){
       ${isMgr ? `<button class="btn btn-outline" id="printLabelsBtn">🏷 Print Labels</button>` : ''}
       ${isMgr ? `<button class="btn btn-outline" id="logWastageBtn">🗑 Log Damage/Wastage</button>` : ''}
       ${isMgr ? `<button class="btn btn-outline" id="viewPOBtn">📋 Purchase Orders${state.purchaseOrders.filter(p=>p.status==='Pending').length?` (${state.purchaseOrders.filter(p=>p.status==='Pending').length})`:''}</button>` : ''}
+      ${isMgr ? `<button class="btn btn-outline" id="importProductsBtn">📥 Import Excel</button>` : ''}
       ${isMgr ? `<button class="btn btn-green" id="addProductBtn">+ Add Product</button>` : ''}
     </div>
   </div>
@@ -1921,6 +2043,8 @@ function deleteProduct(id){
 function attachInventoryHandlers(){
   const btn = document.getElementById('addProductBtn');
   if(btn) btn.addEventListener('click', openAddProductModal);
+  const importBtn = document.getElementById('importProductsBtn');
+  if(importBtn) importBtn.addEventListener('click', openImportProductsModal);
   const printBtn = document.getElementById('printLabelsBtn');
   if(printBtn) printBtn.addEventListener('click', openPrintLabelsModal);
   const wastageBtn = document.getElementById('logWastageBtn');
@@ -2208,6 +2332,126 @@ function saveProduct(){
   }
   __newProductImage = ''; __editingProductId = null;
   saveState(); closeModal(); render();
+}
+
+// ============ IMPORT PRODUCTS FROM EXCEL ============
+let __importedRows = [];
+function openImportProductsModal(){
+  __importedRows = [];
+  openModal(`
+    <h3>📥 Import Products from Excel</h3>
+    <div style="font-size:12.5px; color:var(--muted); margin-bottom:14px; line-height:1.5;">
+      Upload an .xlsx or .csv file with columns like <b>Item Name, Category, MRP, Discount %, Tax % (GST), Item Code, Barcode, HSN/SAC, Unit, Opening Stock, Reorder Qty, Variants</b>.
+      Only <b>Item Name</b> and <b>MRP</b> are required — the rest are optional.
+    </div>
+    <div style="background:var(--paper-shadow); border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div style="font-size:12.5px;">Don't have a file ready?</div>
+      <button class="btn btn-outline btn-sm" onclick="downloadProductTemplate()">⬇ Download Sample Template</button>
+    </div>
+    <label>Choose Excel/CSV file</label>
+    <input type="file" id="mImportFile" accept=".xlsx,.xls,.csv" style="margin-bottom:6px;">
+    <div id="importStatus" style="font-size:12px; color:var(--muted); margin-bottom:14px;"></div>
+    <div id="importPreviewWrap"></div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green" style="flex:1;" id="confirmImportBtn" disabled onclick="confirmImportProducts()">Import 0 Products</button>
+    </div>`);
+  document.getElementById('mImportFile').addEventListener('change', handleImportFileSelect);
+}
+function downloadProductTemplate(){
+  const headers = ["Item Name","Category","Description","MRP","Discount %","Tax % (GST)","Item Code","Barcode","HSN/SAC","Unit","Opening Stock","Reorder Qty","Variants"];
+  const example = [
+    {"Item Name":"Aashirvaad Atta 5kg","Category":"Grocery","Description":"Whole wheat flour","MRP":285,"Discount %":5,"Tax % (GST)":5,"Item Code":"001","Barcode":"","HSN/SAC":"1101","Unit":"pcs","Opening Stock":40,"Reorder Qty":10,"Variants":""},
+    {"Item Name":"Colgate Toothpaste 100g","Category":"Grocery","Description":"","MRP":55,"Discount %":0,"Tax % (GST)":12,"Item Code":"002","Barcode":"","HSN/SAC":"3306","Unit":"pcs","Opening Stock":60,"Reorder Qty":20,"Variants":""},
+    {"Item Name":"Men's Round Neck T-Shirt","Category":"Clothes","Description":"Cotton, mixed sizes","MRP":399,"Discount %":10,"Tax % (GST)":5,"Item Code":"003","Barcode":"","HSN/SAC":"6109","Unit":"pcs","Opening Stock":15,"Reorder Qty":5,"Variants":"Red-S, Red-M, Blue-L"}
+  ];
+  const ws = XLSX.utils.json_to_sheet(example, {header:headers});
+  ws['!cols'] = [{wch:24},{wch:12},{wch:24},{wch:9},{wch:11},{wch:11},{wch:11},{wch:14},{wch:10},{wch:9},{wch:12},{wch:11},{wch:28}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Products');
+  XLSX.writeFile(wb, `product_import_template.xlsx`);
+}
+function __normKey(k){ return String(k||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function handleImportFileSelect(e){
+  const file = e.target.files[0];
+  const status = document.getElementById('importStatus');
+  const previewWrap = document.getElementById('importPreviewWrap');
+  const confirmBtn = document.getElementById('confirmImportBtn');
+  __importedRows = [];
+  confirmBtn.disabled = true; confirmBtn.textContent = 'Import 0 Products';
+  previewWrap.innerHTML = '';
+  if(!file) return;
+  status.textContent = 'Reading file...';
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!rows.length){ status.style.color='var(--red)'; status.textContent = 'No rows found in the first sheet.'; return; }
+      const fieldMap = {itemname:'name', name:'name', category:'category', description:'description', desc:'description',
+        mrp:'mrp', discount:'discountPct', discountpct:'discountPct', tax:'gstRate', taxgst:'gstRate', gst:'gstRate', gstrate:'gstRate',
+        itemcode:'itemCode', code:'itemCode', barcode:'barcode', hsnsac:'hsn', hsn:'hsn', unit:'unit',
+        openingstock:'stock', stock:'stock', reorderqty:'reorderQty', reorder:'reorderQty', variants:'variants'};
+      const parsed = []; const errors = [];
+      rows.forEach((row, i)=>{
+        const obj = {};
+        Object.keys(row).forEach(k=>{ const mapped = fieldMap[__normKey(k)]; if(mapped) obj[mapped] = row[k]; });
+        const name = String(obj.name||'').trim();
+        if(!name) return; // skip fully blank rows silently
+        const mrp = parseFloat(obj.mrp)||0;
+        if(mrp<=0){ errors.push(`Row ${i+2}: "${name}" — missing/invalid MRP, skipped`); return; }
+        const discountPct = parseFloat(obj.discountPct)||0;
+        const gstRate = parseFloat(obj.gstRate)||0;
+        const discAmt = mrp*(discountPct/100);
+        const price = mrp - discAmt;
+        const variants = String(obj.variants||'').split(',').map(v=>v.trim()).filter(Boolean);
+        parsed.push({
+          name, category: String(obj.category||'Other').trim() || 'Other', description: String(obj.description||'').trim(),
+          barcode: String(obj.barcode||'').trim(), itemCode: String(obj.itemCode||'').trim(),
+          hsn: String(obj.hsn||'').trim(), unit: String(obj.unit||'none').trim().toLowerCase() || 'none',
+          hideQty:false, mrp, discountPct, price, gstRate,
+          stock: parseInt(obj.stock)||0, reorderQty: parseInt(obj.reorderQty)||0, variants
+        });
+      });
+      __importedRows = parsed;
+      status.style.color = errors.length ? 'var(--amber)' : 'var(--muted)';
+      status.textContent = `Found ${parsed.length} valid product${parsed.length===1?'':'s'} in "${file.name}".` + (errors.length ? ` ${errors.length} row(s) skipped.` : '');
+      if(parsed.length){
+        previewWrap.innerHTML = `<div class="table-wrap" style="max-height:220px; overflow:auto;"><table style="font-size:11.5px;">
+          <thead><tr><th>Name</th><th>Category</th><th>MRP</th><th>Price</th><th>GST%</th><th>Stock</th><th>Code</th></tr></thead>
+          <tbody>${parsed.slice(0,50).map(p=>`<tr><td>${p.name}</td><td>${p.category}</td><td class="num">${p.mrp.toFixed(2)}</td><td class="num">${p.price.toFixed(2)}</td><td class="num">${p.gstRate}%</td><td class="num">${p.stock}</td><td class="num">${p.itemCode||'auto'}</td></tr>`).join('')}</tbody>
+        </table></div>${parsed.length>50?`<div style="font-size:11px; color:var(--muted); margin-top:6px;">Showing first 50 of ${parsed.length} rows.</div>`:''}
+        ${errors.length?`<div style="font-size:11px; color:var(--amber); margin-top:8px;">${errors.slice(0,8).join('<br>')}</div>`:''}`;
+      }
+      confirmBtn.disabled = parsed.length===0;
+      confirmBtn.textContent = `Import ${parsed.length} Product${parsed.length===1?'':'s'}`;
+    }catch(err){
+      status.style.color='var(--red)'; status.textContent = 'Could not read this file. Make sure it is a valid .xlsx/.csv exported from Excel.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function confirmImportProducts(){
+  if(!__importedRows.length) return;
+  let nextCodeNum = state.products.reduce((max,p)=>{ const n=parseInt(p.itemCode); return (!isNaN(n) && n>max) ? n : max; },0)+1;
+  let added=0, updated=0;
+  __importedRows.forEach(row=>{
+    let itemCode = row.itemCode;
+    let existing = itemCode ? state.products.find(p=>p.itemCode===itemCode) : null;
+    if(!itemCode){ itemCode = String(nextCodeNum).padStart(3,'0'); nextCodeNum++; }
+    if(existing){
+      Object.assign(existing, {...row, itemCode});
+      updated++;
+    } else {
+      state.products.push({id:uid(), ...row, itemCode});
+      added++;
+    }
+  });
+  saveState(); closeModal(); render();
+  showSuccessToast(`Imported: ${added} added, ${updated} updated`);
+  __importedRows = [];
 }
 
 // ============ CUSTOMERS ============
@@ -3334,199 +3578,6 @@ function attachReportHandlers(){
   });
 }
 
-
-// ============ DESKTOP & EXCEL SAVE ============
-// 1) "Download Excel" -> one .xlsx with every sheet (works in any browser)
-// 2) "Auto-save folder" -> pick a folder on the PC once; app rewrites data.json + all_data.xlsx there after every change (Chrome / Edge)
-let __dsHandle = null;          // chosen folder handle
-let __dsPerm = 'none';          // none | granted | prompt | unsupported
-let __dsTimer = null;
-let __dsStatus = '';
-let __dsLastSaved = '';
-const DS_SUPPORTED = (typeof window !== 'undefined') && typeof window.showDirectoryPicker === 'function';
-
-function dsIdb(){
-  return new Promise((res,rej)=>{
-    const r = indexedDB.open('nexora-fs', 1);
-    r.onupgradeneeded = ()=> r.result.createObjectStore('h');
-    r.onsuccess = ()=> res(r.result);
-    r.onerror = ()=> rej(r.error);
-  });
-}
-async function dsStoreHandle(h){
-  try{ const db = await dsIdb(); const tx = db.transaction('h','readwrite'); h ? tx.objectStore('h').put(h,'dir') : tx.objectStore('h').delete('dir'); }catch(e){}
-}
-async function dsLoadHandle(){
-  if(!DS_SUPPORTED){ __dsPerm = 'unsupported'; return; }
-  try{
-    const db = await dsIdb();
-    const h = await new Promise(res=>{ const q = db.transaction('h').objectStore('h').get('dir'); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); });
-    if(h){ __dsHandle = h; __dsPerm = await h.queryPermission({mode:'readwrite'}); }
-  }catch(e){}
-}
-function sheetFromRows(rows, headers){
-  const data = rows.length ? rows : [Object.fromEntries(headers.map(h=>[h,'']))];
-  const ws = XLSX.utils.json_to_sheet(data, {header: headers});
-  ws['!cols'] = headers.map(h=>({wch: Math.max(12, Math.min(36, h.length+6))}));
-  return ws;
-}
-function buildAllDataWorkbook(){
-  const fmtD = d => d ? new Date(d).toLocaleString('en-IN') : '';
-  const billByid = Object.fromEntries(state.bills.map(b=>[b.id,b]));
-  const wb = XLSX.utils.book_new();
-  const add = (name, rows, headers)=> XLSX.utils.book_append_sheet(wb, sheetFromRows(rows, headers), name);
-
-  add('Shop Info', [{ Shop:state.shopName, Address:state.address, Mobile:state.mobile, 'UPI ID':state.upiId||'', 'Exported On':new Date().toLocaleString('en-IN'), 'App Version':APP_VERSION }],
-      ['Shop','Address','Mobile','UPI ID','Exported On','App Version']);
-
-  add('Bills', state.bills.map(b=>({
-    'Invoice No':b.invoiceNumber||'', Date:fmtD(b.date), Customer:b.customerName||'', Phone:b.customerPhone||'', Category:b.invoiceCategory||'',
-    Cashier:b.cashier||'', Items:(b.items||[]).length, Subtotal:b.subtotal, GST:b.gst, 'Product Discount':b.productDiscountTotal||0,
-    'Bill Discount':b.discountAmt||0, 'Extra Charges':b.additionalCharges||0, 'Round Off':b.roundOffAmt||0, Total:b.total, Paid:b.paid, Due:b.due, Notes:b.notes||''
-  })), ['Invoice No','Date','Customer','Phone','Category','Cashier','Items','Subtotal','GST','Product Discount','Bill Discount','Extra Charges','Round Off','Total','Paid','Due','Notes']);
-
-  const lines = [];
-  state.bills.forEach(b=>(b.items||[]).forEach(it=>lines.push({
-    'Invoice No':b.invoiceNumber||'', Date:fmtD(b.date), Customer:b.customerName||'', Item:it.name, Variant:it.variantName||'',
-    Qty:it.qty, MRP:it.mrp, Rate:it.price, 'GST %':it.gstRate, 'Line Amount (Rate x Qty)': Math.round(it.price*it.qty*100)/100
-  })));
-  add('Bill Items', lines, ['Invoice No','Date','Customer','Item','Variant','Qty','MRP','Rate','GST %','Line Amount (Rate x Qty)']);
-
-  add('Payments', state.bills.flatMap(b=>(b.paymentHistory||[]).map(ph=>({
-    'Invoice No':b.invoiceNumber||'', Customer:b.customerName||'', Date:fmtD(ph.date), Amount:ph.amount, 'Balance After':ph.balanceAfter, Note:ph.note||''
-  }))), ['Invoice No','Customer','Date','Amount','Balance After','Note']);
-
-  add('Products', state.products.map(p=>({
-    Name:p.name, Category:p.category||'', Description:p.description||'', Barcode:p.barcode||'', 'Item Code':p.itemCode||'', HSN:p.hsn||'', Unit:p.unit||'',
-    MRP:p.mrp, 'Discount %':p.discountPct||0, 'Selling Price':p.price, 'GST %':p.gstRate, Stock:p.stock, 'Reorder Qty':p.reorderQty, Variants:(p.variants||[]).join(', ')
-  })), ['Name','Category','Description','Barcode','Item Code','HSN','Unit','MRP','Discount %','Selling Price','GST %','Stock','Reorder Qty','Variants']);
-
-  add('Customers', state.customers.map(c=>({ Name:c.name, Phone:c.phone||'', Address:c.address||'', 'Due Amount':c.dueAmount||0 })),
-      ['Name','Phone','Address','Due Amount']);
-
-  add('Expenses', state.expenses.map(e=>({ Date:e.date, Category:e.category, Amount:e.amount, Note:e.note||'' })), ['Date','Category','Amount','Note']);
-
-  add('Returns', state.returns.map(r=>({
-    Date:fmtD(r.date), 'Original Invoice':(billByid[r.originalBillId]||{}).invoiceNumber||'', Items:(r.items||[]).map(i=>i.name+' x'+i.qty).join(', '),
-    'Refund Total':Math.round(r.refundTotal*100)/100, 'Processed By':r.processedBy||''
-  })), ['Date','Original Invoice','Items','Refund Total','Processed By']);
-
-  add('Purchase Orders', state.purchaseOrders.map(o=>({
-    Date:fmtD(o.date), Supplier:o.supplier, Status:o.status, Items:(o.items||[]).map(i=>i.productName+' x'+i.qty+' @'+i.cost).join(', ')
-  })), ['Date','Supplier','Status','Items']);
-
-  add('Wastage', state.wastageLog.map(w=>({ Date:fmtD(w.date), Product:w.productName, Qty:w.qty, Reason:w.reason||'', 'Logged By':w.loggedBy||'' })),
-      ['Date','Product','Qty','Reason','Logged By']);
-
-  // Staff: NO passwords / PINs are exported
-  const staff = [{ Role:'Manager', Name:state.managerName||'', Username:state.managerUsername||'', Mobile:'', Blocked:'' }]
-    .concat((state.managers||[]).map(m=>({ Role:'Manager', Name:m.name, Username:m.username, Mobile:'', Blocked:'' })))
-    .concat((state.cashiers||[]).map(c=>({ Role:'Cashier', Name:c.name, Username:c.username, Mobile:c.mobile||'', Blocked:c.blocked?'Yes':'No' })));
-  add('Staff', staff, ['Role','Name','Username','Mobile','Blocked']);
-
-  add('Messages', (state.messages||[]).map(m=>({ Date:fmtD(m.date), From:m.from, To:m.to, Message:m.text })), ['Date','From','To','Message']);
-  return wb;
-}
-function downloadAllExcel(){
-  try{
-    const wb = buildAllDataWorkbook();
-    XLSX.writeFile(wb, `${(state.shopName||'shop').replace(/\s+/g,'_')}_all_data_${todayStr()}.xlsx`);
-  }catch(e){ alert('Excel export failed: '+e.message); }
-}
-function persistJson(){
-  const {currentBill, tab, session, loginRole, loginError, navOpen, pinUnlocked, pendingOtp, settingsSubPage, ...persist} = state;
-  return JSON.stringify(persist, null, 2);
-}
-async function dsWriteFile(name, data){
-  const fh = await __dsHandle.getFileHandle(name, {create:true});
-  const w = await fh.createWritable();
-  await w.write(data);
-  await w.close();
-}
-async function writeToDesktop(userGesture){
-  if(!__dsHandle) return false;
-  try{
-    let perm = await __dsHandle.queryPermission({mode:'readwrite'});
-    if(perm!=='granted' && userGesture) perm = await __dsHandle.requestPermission({mode:'readwrite'});
-    __dsPerm = perm;
-    if(perm!=='granted'){ __dsStatus = 'Folder access needs permission — tap "Save Now" or "Reconnect".'; return false; }
-    const base = (state.shopName||'shop').replace(/[^\w\-]+/g,'_');
-    const wb = buildAllDataWorkbook();
-    const xbuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    await dsWriteFile(`${base}_all_data.xlsx`, new Blob([xbuf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    const json = persistJson();
-    await dsWriteFile(`${base}_data.json`, json);
-    await dsWriteFile(`${base}_backup_${todayStr()}.json`, json);   // one snapshot per day
-    __dsLastSaved = new Date().toLocaleTimeString('en-IN');
-    __dsStatus = 'Saved to folder at '+__dsLastSaved;
-    return true;
-  }catch(e){
-    __dsStatus = 'Could not write to folder: '+(e.message||e);
-    return false;
-  }
-}
-function scheduleDesktopSave(){
-  if(!__dsHandle || __dsPerm!=='granted') return;
-  clearTimeout(__dsTimer);
-  __dsTimer = setTimeout(async ()=>{
-    await writeToDesktop(false);
-    const el = document.getElementById('dsStatusLine');
-    if(el) el.textContent = __dsStatus;
-  }, 2500);
-}
-async function pickDesktopFolder(){
-  try{
-    const h = await window.showDirectoryPicker({mode:'readwrite'});
-    __dsHandle = h; await dsStoreHandle(h);
-    __dsPerm = 'granted';
-    const ok = await writeToDesktop(true);
-    if(!ok) alert(__dsStatus);
-  }catch(e){
-    if(e && e.name==='AbortError') return;
-    alert('Could not open folder picker: '+(e.message||e)+'\n\nTip: open this app in Chrome or Edge directly (not inside another app or frame).');
-  }
-  render();
-}
-async function disconnectDesktopFolder(){
-  __dsHandle = null; __dsPerm = 'none'; __dsStatus = ''; await dsStoreHandle(null); render();
-}
-function renderDataSaveSub(){
-  const permNote = !DS_SUPPORTED
-    ? `<div style="background:#FFF4E0; border-radius:10px; padding:10px 12px; font-size:12.5px; margin-bottom:12px;">Auto-save to a PC folder needs <strong>Chrome or Edge</strong> on desktop. This browser doesn't support it — use the Excel and Backup download buttons below instead.</div>`
-    : '';
-  const folderBlock = !DS_SUPPORTED ? '' : (__dsHandle ? `
-    <div style="font-size:13px; margin-bottom:8px;">📁 Folder: <strong>${__dsHandle.name}</strong> ${__dsPerm==='granted' ? '<span class="pill ok">Connected</span>' : '<span class="pill">Needs permission</span>'}</div>
-    <div id="dsStatusLine" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">${__dsStatus || (__dsPerm==='granted' ? 'Auto-save is on.' : 'After reopening the app, tap "Save Now" once to allow folder access again.')}</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn btn-green" id="dsSaveNowBtn">💾 Save Now</button>
-      <button class="btn btn-outline" id="dsPickBtn">Change Folder</button>
-      <button class="btn btn-outline" id="dsDisconnectBtn">Disconnect</button>
-    </div>` : `
-    <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Pick a folder on your computer (e.g. Desktop or Documents). After every bill or change, the app saves your data there automatically.</div>
-    <button class="btn btn-green" id="dsPickBtn">📁 Choose Desktop Folder</button>`);
-  return `
-  <div class="card" style="max-width:520px; margin-bottom:16px;">
-    <label style="margin-bottom:10px;">Auto-save to Desktop Folder</label>
-    ${permNote}
-    ${folderBlock}
-    <div style="font-size:12px; color:var(--muted); margin-top:12px;">Files written: <strong>${(state.shopName||'shop').replace(/[^\w\-]+/g,'_')}_all_data.xlsx</strong> (Excel, all data), <strong>_data.json</strong> (full backup, can be restored), and one <strong>_backup_DATE.json</strong> snapshot per day.</div>
-  </div>
-  <div class="card" style="max-width:520px;">
-    <label style="margin-bottom:10px;">Download Everything as Excel</label>
-    <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">One Excel file with separate sheets: Bills, Bill Items, Payments, Products, Customers, Expenses, Returns, Purchase Orders, Wastage, Staff, Messages, Shop Info. Passwords and PINs are never included.</div>
-    <button class="btn btn-outline" id="dsExcelBtn">⬇ Download All Data (Excel)</button>
-  </div>`;
-}
-function attachDataSaveHandlers(){
-  const g = id=>document.getElementById(id);
-  if(g('dsExcelBtn')) g('dsExcelBtn').addEventListener('click', downloadAllExcel);
-  if(g('dsPickBtn')) g('dsPickBtn').addEventListener('click', pickDesktopFolder);
-  if(g('dsDisconnectBtn')) g('dsDisconnectBtn').addEventListener('click', disconnectDesktopFolder);
-  if(g('dsSaveNowBtn')) g('dsSaveNowBtn').addEventListener('click', async ()=>{
-    await writeToDesktop(true); render();
-  });
-}
-
 // ============ SETTINGS (manager) ============
 const THEME_PRESET_LABELS = { emerald:'Emerald', goldgreen:'Gold & Green', purple:'Royal Purple', ocean:'Ocean Blue', classic:'Classic Ink' };
 const PRINT_TPL_LABELS = { classic:'Classic Receipt', thermal58:'Thermal 58mm', thermal80:'Thermal 80mm', a4detailed:'A4 Detailed Invoice', minimal:'Minimal' };
@@ -3543,10 +3594,10 @@ function renderSettingsMain(){
     ['staff','👥','Manager Accounts', `${1+state.managers.length} account(s)`],
     ['notifications','🔔','Notifications', `Alert above ${money(state.bigSaleThreshold)}`],
     ['integrations','🔗','Integrations', state.sheetsyncEnabled ? 'Google Sheets: On' : 'Google Sheets: Off'],
-    ['datasave','💾','Desktop & Excel Save', __dsHandle ? 'Auto-save: '+(__dsHandle.name||'folder') : 'Save all data to PC + Excel'],
     ['backup','☁️','Backup','Download / Restore'],
     ['updates','🔄','Updates', `Version ${APP_VERSION}`],
     ['privacy','🔒','Privacy & Security', state.appPin.enabled ? 'PIN Lock is on' : 'Security & permissions'],
+    ['devices','🔗','Linked Devices', state.cloudUserEmail ? `Synced · ${state.cloudUserEmail}` : 'Not linked'],
     ['about','ℹ️','About NEXORA', `Version ${APP_VERSION} · Support & legal`],
   ];
   return `
@@ -3574,7 +3625,7 @@ function renderSettingsMain(){
 }
 function renderSettingsSub(){
   const sub = state.settingsSubPage;
-  const titles = { theme:'Theme & Display', language:'Language', shopinfo:'Shop Info', billing:'Billing & Printing', staff:'Manager Accounts', notifications:'Notifications', integrations:'Integrations', datasave:'Desktop & Excel Save', backup:'Backup', updates:'Updates', privacy:'Privacy & Security', about:'About NEXORA' };
+  const titles = { theme:'Theme & Display', language:'Language', shopinfo:'Shop Info', billing:'Billing & Printing', staff:'Manager Accounts', notifications:'Notifications', integrations:'Integrations', backup:'Backup', updates:'Updates', privacy:'Privacy & Security', devices:'Linked Devices', about:'About NEXORA' };
   return `<div class="settings-back" id="settingsBackBtn">⮜  ${titles[sub]||'Settings'}</div>${renderSettingsSubContent(sub)}`;
 }
 function renderSettingsSubContent(sub){
@@ -3793,8 +3844,6 @@ function renderSettingsSubContent(sub){
     </label>
   </div>`;
 
-  if(sub==='datasave') return renderDataSaveSub();
-
   if(sub==='backup') return `
   <div class="card" style="max-width:480px;">
     <label style="margin-bottom:10px;">Backup & Restore</label>
@@ -3853,6 +3902,22 @@ function renderSettingsSubContent(sub){
       <div class="pill ok" style="margin-bottom:12px; display:inline-block;">Recovery PIN is set</div><br>
       <button class="btn btn-outline" id="changeRecoveryPinBtn">Change Recovery PIN</button>
     ` : `<button class="btn btn-green" id="setRecoveryPinBtn">Set Up Recovery PIN</button>`}
+  </div>`;
+
+  if(sub==='devices') return `
+  <div class="card" style="max-width:480px; margin-bottom:16px;">
+    <label style="margin-bottom:10px;">🔗 Linked Devices</label>
+    <div class="sub" style="text-transform:none; font-family:'Inter'; margin-bottom:14px; line-height:1.5;">Sign in with the same Google account on your phone, desktop, or tablet, and your bills, products and customers stay in sync automatically across all of them.</div>
+    ${state.cloudUserEmail ? `
+      <div style="font-size:12.5px; margin-bottom:14px;">Status: <strong>🟢 Signed in as ${state.cloudUserEmail}</strong></div>
+      <button class="btn btn-outline btn-block" style="color:var(--red); border-color:var(--red);" id="googleSignOutBtn">Sign Out</button>
+    ` : `
+      <div style="font-size:12.5px; margin-bottom:14px;">Status: <strong>⚪ Not signed in</strong></div>
+      <button class="btn btn-green btn-block" id="googleSignInBtn">🔵 Sign in with Google</button>
+    `}
+  </div>
+  <div class="card" style="max-width:480px;">
+    <div style="font-size:11.5px; color:var(--muted); line-height:1.6;">⚠️ Google Sign-In needs an internet connection and only works when this page is hosted (opened via http/https) — it will not work when the file is opened directly (file://) on your computer. Both signed-in devices need internet access to stay in sync.</div>
   </div>`;
 
   if(sub==='about') return `
@@ -4018,7 +4083,6 @@ function attachSettingsHandlers(){
     if(newLogo) state.logo = newLogo;
     saveState(); render();
   });
-  attachDataSaveHandlers();
   const backupBtn = document.getElementById('backupBtn');
   if(backupBtn) backupBtn.addEventListener('click', backupData);
   const restoreFile = document.getElementById('restoreFile');
@@ -4099,6 +4163,10 @@ function attachSettingsHandlers(){
   if(aboutTermsBtn) aboutTermsBtn.addEventListener('click', showTermsModal);
   const aboutSupportBtn = document.getElementById('aboutSupportBtn');
   if(aboutSupportBtn) aboutSupportBtn.addEventListener('click', showContactSupportModal);
+  const googleSignInBtn = document.getElementById('googleSignInBtn');
+  if(googleSignInBtn) googleSignInBtn.addEventListener('click', signInWithGoogle);
+  const googleSignOutBtn = document.getElementById('googleSignOutBtn');
+  if(googleSignOutBtn) googleSignOutBtn.addEventListener('click', signOutGoogle);
   const updateUrlInput = document.getElementById('updateCheckUrl');
   if(updateUrlInput) updateUrlInput.addEventListener('change', ()=>{ state.updateCheckUrl = updateUrlInput.value.trim(); saveState(); });
   const checkUpdateBtn = document.getElementById('checkUpdateBtn');
@@ -4191,7 +4259,6 @@ document.addEventListener('click', resetIdleTimer);
 document.addEventListener('keydown', resetIdleTimer);
 document.addEventListener('touchstart', resetIdleTimer, {passive:true});
 
-dsLoadHandle().then(()=>{ if(state.settingsSubPage) render(); });
 loadState();
 </script>
 </body>
