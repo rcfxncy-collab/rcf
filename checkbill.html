@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check Your Bills</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#eef7ff;color:#102957}
+.page{max-width:1230px;margin:auto;padding:46px 28px 35px}
+.top{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.card{background:#fff;border-radius:18px;padding:30px 34px 34px;box-shadow:0 10px 30px rgba(38,91,150,.10)}
+.heading{display:flex;gap:18px;align-items:center;margin-bottom:27px}
+.heading-icon{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#287af0,#1260d9);display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;flex:none}
+h1{font-size:35px;line-height:1.1;margin-bottom:7px}
+.sub{font-size:16px;line-height:1.4;color:#61799e}
+label.l{display:block;font-size:15px;font-weight:700;margin-bottom:9px}
+.group{margin-bottom:21px}
+.input{height:52px;border:1px solid #c9dbf1;border-radius:9px;display:flex;overflow:hidden;background:#fff}
+.input:focus-within{border-color:#2878e9;box-shadow:0 0 0 3px rgba(40,120,233,.12)}
+.input-icon{width:52px;background:#f4f8fd;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+input{border:0;outline:0;width:100%;font-size:16px;padding:0 14px;color:#193762;background:transparent;font-family:inherit}
+.captcha-row{display:flex;gap:10px}
+.captcha{height:58px;flex:1;border:1px solid #c9d9ec;border-radius:9px;background:#edf4fc;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.captcha svg{height:54px;width:auto;max-width:100%}
+.refresh{width:58px;border:0;border-radius:9px;background:#2878e9;color:#fff;font-size:27px;cursor:pointer}
+.check{width:100%;height:58px;border:0;border-radius:9px;background:linear-gradient(90deg,#2878ed,#1263dc);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 7px 18px rgba(30,105,225,.22)}
+.check:disabled{opacity:.65;cursor:wait}
+.error{display:none;margin-top:14px;padding:11px;border-radius:8px;background:#ffe7e7;color:#c62828;text-align:center;font-size:14px}
+.hero{text-align:center}
+.hero h2{font-size:42px;line-height:1.12}
+.hero h2 span{color:#2878e9}
+.hero>p{font-size:21px;color:#63799d;margin:14px 0 20px}
+.illustration{height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.illustration img{width:100%;max-width:525px;height:auto;display:block}
+.features{display:grid;grid-template-columns:repeat(3,1fr);margin-top:4px}
+.feature{padding:10px;border-right:1px solid #d1dfef}
+.feature:last-child{border:0}
+.fi{width:52px;height:52px;border-radius:50%;background:#dcecff;color:#1870df;margin:auto auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.feature h4{margin-bottom:6px}.feature p{font-size:13px;color:#7890b0}
+/* result */
+.result{display:none;background:#fff;margin-top:38px;border-radius:18px;padding:18px 25px 25px;box-shadow:0 10px 30px rgba(38,91,150,.10)}
+.success{background:#e9fbf4;border-radius:12px;padding:16px;display:flex;gap:15px;align-items:center;margin-bottom:22px}
+.ok{width:50px;height:50px;border-radius:50%;background:#12a879;color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}
+.success h3{color:#09966d;margin-bottom:4px}.success p{color:#527a6b}
+.btns{display:flex;gap:12px;max-width:794px;margin:18px auto 0}
+.action{flex:1;height:48px;border:0;border-radius:8px;background:#2878ed;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+.action.alt{background:#fff;color:#2672df;border:2px solid #2678ed}
+/* invoice (template) */
+.inv{max-width:794px;margin:0 auto;background:#fff;position:relative;overflow:hidden;padding:42px 36px 190px;border:1px solid #e1e8f0;color:#1a1a1a}
+.itop{display:flex;justify-content:space-between;align-items:flex-start;font-size:14px;letter-spacing:1px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;text-transform:uppercase;line-height:1.3}
+.brand img{height:44px;width:auto}
+.ititle{font-size:clamp(54px,15vw,112px);font-weight:900;letter-spacing:-1px;line-height:1;margin:34px 0 28px;font-family:'Arial Black',Arial,sans-serif}
+.date{font-size:15px;margin-bottom:26px}.date b{margin-right:8px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:26px;font-size:14px;line-height:1.6}
+.cols b{display:block;font-size:15px;margin-bottom:2px}
+.inv table{width:100%;border-collapse:collapse;font-size:14px}
+.inv th{background:#e6e6e8;font-weight:500;text-align:right;padding:14px 12px}
+.inv th:first-child,.inv td:first-child{text-align:left}
+.inv td{padding:9px 12px;text-align:right;vertical-align:top}
+.inv td small{display:block;color:#777;font-size:11.5px}
+.sum td{padding:5px 12px}
+.sum tr.first td{border-top:2px solid #e6e6e8;padding-top:12px}
+.sum tr.tot td{border-top:2px solid #e6e6e8;border-bottom:2px solid #e6e6e8;font-weight:800;padding:13px 12px;font-size:15px}
+.meta{margin-top:26px;font-size:14px;line-height:1.9;padding-left:12px}.meta b{margin-right:6px}
+.wave{position:absolute;left:0;right:0;bottom:0;width:100%;height:auto;display:block}
+@media(max-width:850px){
+  .page{padding:25px 15px}.top{grid-template-columns:1fr;gap:30px}
+  .hero{order:-1}.hero h2{font-size:32px}.illustration{height:220px}
+}
+@media(max-width:560px){
+  .card{padding:24px 20px}.heading{align-items:flex-start}
+  .heading-icon{width:56px;height:56px;font-size:25px}
+  h1{font-size:27px}.features{display:none}
+  .feature{border:0}.hero>p{font-size:17px}.result{padding:15px}
+  .inv{padding:26px 16px 130px}.cols{font-size:12.5px}.inv table{font-size:12.5px}.inv th,.inv td{padding:8px 6px}.sum td{padding:4px 6px}.meta{font-size:12.5px;padding-left:6px}
+}
+@media print{
+  body{background:#fff}.page{padding:0}.top,.success,.btns{display:none!important}
+  .result{display:block!important;box-shadow:none;margin:0;padding:0}.inv{border:0;max-width:none}@page{size:A4;margin:0}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="top">
+  <div class="card">
+    <div class="heading">
+      <div class="heading-icon">🧾</div>
+      <div>
+        <h1>Check Your Bills</h1>
+        <div class="sub">Enter your mobile number, bill number and captcha<br>to view your bill details.</div>
+      </div>
+    </div>
+    <form id="billForm">
+      <div class="group">
+        <label class="l">Mobile Number</label>
+        <div class="input"><div class="input-icon">☎</div><input id="mobile" type="tel" inputmode="numeric" maxlength="10" placeholder="Enter 10 digit mobile number"></div>
+      </div>
+      <div class="group">
+        <label class="l">Bill Number</label>
+        <div class="input"><div class="input-icon">📄</div><input id="bill" type="text" inputmode="numeric" placeholder="Enter bill number"></div>
+      </div>
+      <div class="group">
+        <label class="l">Enter CAPTCHA</label>
+        <div class="captcha-row">
+          <div class="captcha" id="captcha">...</div>
+          <button class="refresh" type="button" onclick="newCaptcha()" title="New captcha">↻</button>
+        </div>
+        <div class="input" style="margin-top:10px"><div class="input-icon">🛡</div><input id="captchaInput" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Enter 4 digit captcha"></div>
+      </div>
+      <button class="check" id="checkBtn" type="submit">⌕ &nbsp; Check Bill</button>
+      <div class="error" id="error"></div>
+    </form>
+  </div>
+
+  <div class="hero">
+    <h2>Your Bill</h2>
+    <h2><span>Just a Click Away</span></h2>
+    <p>Quick &nbsp; • &nbsp; Easy &nbsp; • &nbsp; Secure</p>
+    <div class="illustration"><img src="/public/bill-hero.png" alt=""></div>
+    <div class="features">
+      <div class="feature"><div class="fi">🛡</div><h4>Safe &amp; Secure</h4><p>Your data is protected</p></div>
+      <div class="feature"><div class="fi">ϟ</div><h4>Fast Access</h4><p>Get your bill instantly</p></div>
+      <div class="feature"><div class="fi">♧</div><h4>24/7 Support</h4><p>We are always here</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="result" id="result">
+  <div class="success">
+    <div class="ok">✓</div>
+    <div><h3>Bill found successfully!</h3><p>Here are your bill details:</p></div>
+  </div>
+
+  <div class="inv" id="inv">
+    <div class="itop"><div class="brand"><img src="/public/logorcf.png" alt="" onerror="this.style.display='none'"><span id="shopName"></span></div><div id="invNo"></div></div>
+    <div class="ititle">INVOICE</div>
+    <div class="date"><b>Date:</b><span id="dt"></span></div>
+    <div class="cols">
+      <div><b>Billed to:</b><span id="billedTo"></span></div>
+      <div><b>From:</b><span id="from"></span></div>
+    </div>
+    <table><thead><tr><th>Item</th><th>Quantity</th><th>Price</th><th>Amount</th></tr></thead><tbody id="rows"></tbody></table>
+    <table class="sum"><tbody id="sum"></tbody></table>
+    <div class="meta" id="meta"></div>
+    <svg class="wave" viewBox="0 0 1131 330" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 60 C120 40 330 40 520 130 L600 190 L0 330 Z" fill="#d0d1d3"/><path d="M60 330 C260 200 470 150 660 150 C860 150 1020 110 1131 0 L1131 330 Z" fill="#454646"/></svg>
+  </div>
+
+  <div class="btns">
+    <button class="action" onclick="window.print()">⇩ &nbsp; Print / Save PDF</button>
+    <button class="action alt" onclick="again()">Check another bill</button>
+  </div>
+</div>
+
+</div>
+<script>
+let capToken = '';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rs = n => '₹' + (Number(n) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+function showErr(m){ const e = $('error'); e.textContent = m; e.style.display = m ? 'block' : 'none'; }
+['mobile','bill','captchaInput'].forEach(id => $(id).addEventListener('input', e => { if(id !== 'bill') e.target.value = e.target.value.replace(/\D/g, ''); }));
+async function newCaptcha(){
+  $('captchaInput').value = '';
+  try{ const r = await (await fetch('/api/captcha', {cache:'no-store'})).json(); capToken = r.token; $('captcha').innerHTML = r.svg; }
+  catch(e){ $('captcha').textContent = 'Could not load'; }
+}
+$('billForm').addEventListener('submit', async ev => {
+  ev.preventDefault(); showErr('');
+  const mobile = $('mobile').value.trim(), billNo = $('bill').value.trim(), captchaAnswer = $('captchaInput').value.trim();
+  if(mobile.length !== 10){ showErr('Enter a valid 10 digit mobile number.'); return; }
+  if(!billNo){ showErr('Enter your bill number.'); return; }
+  if(captchaAnswer.length !== 4){ showErr('Enter the 4 digit captcha.'); return; }
+  const btn = $('checkBtn'); btn.disabled = true; btn.textContent = 'Please wait...';
+  try{
+    const res = await fetch('/api/bill-lookup', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mobile, billNo, captchaToken: capToken, captchaAnswer})});
+    const r = await res.json();
+    if(!res.ok){ showErr(r.error || 'Something went wrong.'); newCaptcha(); }
+    else show(r);
+  }catch(e){ showErr('Cannot reach the server. Check your internet.'); newCaptcha(); }
+  btn.disabled = false; btn.innerHTML = '⌕ &nbsp; Check Bill';
+});
+function show(r){
+  const b = r.bill, s = r.shop, d = new Date(b.date);
+  $('shopName').textContent = s.name;
+  $('invNo').textContent = 'NO. ' + String(b.invoiceNumber).padStart(6, '0');
+  $('dt').textContent = String(d.getDate()).padStart(2,'0') + ' ' + d.toLocaleString('en-GB', {month:'long'}) + ', ' + d.getFullYear();
+  $('billedTo').innerHTML = esc(b.customerName) + '<br>' + esc(b.customerPhone || '');
+  $('from').innerHTML = esc(s.name) + (s.address ? '<br>' + esc(s.address) : '') + (s.mobile ? '<br>' + esc(s.mobile) : '');
+  $('rows').innerHTML = b.items.map(i => '<tr><td>' + esc(i.name) + (i.variantName ? '<small>' + esc(i.variantName) + '</small>' : '') + '</td><td>' + i.qty + '</td><td>' + rs(i.price) + '</td><td>' + rs(i.price * i.qty) + '</td></tr>').join('');
+  const row = (l, v, cls) => '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td colspan="3" style="text-align:right">' + l + '</td><td>' + v + '</td></tr>';
+  let sm = row('Subtotal', rs(b.subtotal), 'first') + row('GST', rs(b.gst));
+  if(b.discountAmt > 0) sm += row('Discount', '-' + rs(b.discountAmt));
+  if(b.additionalCharges > 0) sm += row('Extra charges', rs(b.additionalCharges));
+  if(b.roundOffAmt) sm += row('Round off', rs(b.roundOffAmt));
+  sm += row('Total', rs(b.total), 'tot') + row('Paid', rs(b.paid));
+  if(b.due > 0) sm += row('<b>Balance due</b>', '<b>' + rs(b.due) + '</b>');
+  $('sum').innerHTML = sm;
+  $('meta').innerHTML = '<div><b>Status:</b>' + (b.due > 0 ? 'Payment pending' : 'Paid in full') + '</div>' + (b.notes ? '<div><b>Note:</b>' + esc(b.notes) + '</div>' : '') + '<div><b>Note:</b>Thank you for shopping with us!</div>';
+  $('result').style.display = 'block';
+  $('result').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function again(){ $('result').style.display = 'none'; $('bill').value = ''; newCaptcha(); window.scrollTo({top:0, behavior:'smooth'}); }
+newCaptcha();
+</script>
+</body>
+</html>
