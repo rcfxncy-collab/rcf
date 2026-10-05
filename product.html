@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Products | Royal Collection & Fancy</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f7fb;color:#182a45}
+.container{max-width:1400px;margin:auto;padding:35px 25px 50px}
+.title{text-align:center;margin-bottom:30px}
+.title h1{font-size:32px;margin-bottom:8px}
+.title p{color:#77849a}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.product{position:relative;background:#fff;border:1px solid #e5e9ef;border-radius:14px;overflow:hidden;box-shadow:0 5px 18px #1f375811;transition:.25s}
+.product:hover{transform:translateY(-5px);box-shadow:0 12px 28px #1f375822}
+.product img{width:100%;height:230px;display:block;object-fit:cover;background:#f1f3f6}
+.discount{position:absolute;top:12px;left:12px;z-index:2;background:#e53935;color:#fff;padding:6px 10px;border-radius:5px;font-size:12px;font-weight:bold}
+.content{padding:17px}
+.content h3{font-size:18px;margin-bottom:8px}
+.content p{font-size:13px;line-height:1.5;color:#6d7889;margin-bottom:11px}
+.material b{color:#243650}
+.price{display:flex;gap:9px;align-items:center;font-size:21px;color:#1267d9}
+.price del{font-size:14px;color:#9aa4b2;font-weight:normal}
+button{width:100%;height:42px;margin-top:15px;border:0;border-radius:7px;background:#1267d9;color:#fff;font-weight:bold;cursor:pointer}
+button:hover{background:#0c55b4}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:750px){.grid{grid-template-columns:repeat(2,1fr);gap:15px}.product img{height:190px}}
+@media(max-width:480px){.container{padding:22px 12px}.grid{grid-template-columns:1fr}.product img{height:250px}}
+.back{display:inline-block;margin-bottom:18px;color:#5e4242;font-weight:bold;text-decoration:none}
+.empty{grid-column:1/-1;text-align:center;color:#77849a;padding:60px 0}
+.modal-bg{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;max-width:460px;width:100%;max-height:90vh;overflow:auto}
+.modal img{width:100%;max-height:340px;object-fit:cover;display:block}
+.modal .content button{background:#888}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back" href="/">← Home</a>
+<div class="title"><h1>Our Products</h1><p>Explore our latest products and offers</p></div>
+<div class="grid" id="grid"><div class="empty">Loading products…</div></div>
+</div>
+<div class="modal-bg" id="mb"><div class="modal" id="md"></div></div>
+<script>
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let LIST=[];
+const sale=p=>Math.round(p.price*(1-(p.discount||0)/100));
+const img=p=>'/api/web-products/'+p.id+'/image?v='+(p.imgv||0);
+function priceHtml(p){return '<div class="price"><b>₹'+sale(p)+'</b>'+(p.discount?' <del>₹'+p.price+'</del>':'')+'</div>'}
+fetch('/api/web-products',{cache:'no-store'}).then(r=>r.json()).then(l=>{
+  LIST=l;
+  document.getElementById('grid').innerHTML=l.length?l.map((p,i)=>
+    '<article class="product">'+(p.discount?'<span class="discount">'+p.discount+'% OFF</span>':'')+
+    '<img src="'+img(p)+'" alt="'+esc(p.name)+'" loading="lazy"><div class="content"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description)+'</p>'+
+    priceHtml(p)+'<button onclick="show('+i+')">View Product</button></div></article>').join(''):'<div class="empty">New products coming soon.</div>';
+}).catch(()=>{document.getElementById('grid').innerHTML='<div class="empty">Could not load products. Please try again.</div>'});
+function show(i){const p=LIST[i];
+  document.getElementById('md').innerHTML='<img src="'+img(p)+'" alt=""><div class="content"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description)+'</p>'+priceHtml(p)+'<button onclick="document.getElementById(\'mb\').classList.remove(\'open\')">Close</button></div>';
+  document.getElementById('mb').classList.add('open')}
+document.getElementById('mb').onclick=e=>{if(e.target.id==='mb')e.target.classList.remove('open')};
+</script>
+</body>
+</html>

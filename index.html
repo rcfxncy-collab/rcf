@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ROYAL COLLECTION & FANCY</title>
+<link rel="icon" type="image/png" href="public/logorcf.png" sizes="512x512">
+<meta property="og:title" content="ROYAL COLLECTION & FANCY">
+<meta property="og:description" content="Welcome to Royal Collection & Fancy, Karambakudi — where style meets elegance and every detail speaks luxury. Located in the heart of Karambakudi, our boutique is not just a shop… it’s a complete fashion experience crafted especially for customers who love premium quality and classy collections. From the moment you step inside, you’ll feel the royal vibe, sophisticated ambiance, and beautifully arranged collections that make shopping truly enjoyable.">
+<meta property="og:image" content="https://rcfancy.online/public/logorcf.png">
+<meta property="og:url" content="https://rcfancy.online">
+
+<script>document.documentElement.classList.add('js');</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;scroll-behavior:smooth;}
+
+body{
+    transition:0.4s;
+    background:rgb(49, 45, 45);
+    color:white;
+}
+/* NAVBAR */
+.navbar{
+    position:fixed;
+    width:100%;
+    top:0;
+    padding:15px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:rgba(63, 33, 33, 0.84);
+    backdrop-filter:blur(10px);
+    z-index:1000;
+}
+
+.logo{font-size:22px;font-weight:700;}
+.menu-btn{font-size:22px;cursor:pointer;}
+
+.dropdown{
+    position:absolute;
+    right:20px;
+    top:60px;
+    background:#111;
+    border-radius:10px;
+    display:none;
+    flex-direction:column;
+}
+.dropdown a{
+    padding:10px 15px;
+    color:white;
+    text-decoration:none;
+}
+.dropdown a:hover{background:#333;}
+
+.mode-toggle{
+    cursor:pointer;
+    margin-left:15px;
+}
+
+/* HERO */
+.hero{
+    min-height:100vh;
+    display:flex;
+    justify-content:space-between;
+    align-items:stretch;
+    flex-direction:row;
+    gap:20px;
+    padding:90px 6% 0;
+    animation:fade 9s ease;
+    background-color: aliceblue;
+    overflow:hidden;
+}
+.hero-text,.hero-photo{will-change:transform,opacity;}
+.hero-text{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:flex-start;
+    text-align:left;
+}
+.hero-photo{
+    flex:1;
+    display:flex;
+    justify-content:flex-end;
+    align-items:flex-end;
+}
+.hero-photo img{
+    display:block;
+    max-width:100%;
+    max-height:calc(100vh - 90px);
+    object-fit:contain;
+    animation:fade 7s ease;
+}
+.hero h1{
+    font-size:40px;
+    color: rgb(0, 0, 0);
+    text-shadow:2px 5px 20px  rgba(180, 140, 31, 0.849);
+}
+.hero p{margin-top:10px;}
+.shop-btn{
+    display:inline-block;
+    margin-top:22px;
+    padding:13px 34px;
+    background:#5e4242;
+    color:#fff;
+    font-weight:bold;
+    font-size:16px;
+    letter-spacing:.5px;
+    text-decoration:none;
+    border-radius:30px;
+    border:2px solid #c9a227;
+    box-shadow:0 6px 18px rgba(94,66,66,.35);
+    transition:transform .2s, background .2s;
+}
+.shop-btn:hover{background:#7a5656;transform:translateY(-2px);}
+@media(max-width:700px){.shop-btn{padding:10px 24px;font-size:14px;margin-top:14px;}}
+.hero-text img{
+    margin-bottom:20px;
+    animation:fade 7s ease;
+}
+@media(max-width:700px){
+    .hero{padding:80px 4% 0;gap:8px;}
+    .hero h1{font-size:22px;}
+    .hero-text img{width:80px !important;height:auto !important;}
+}
+
+/* SLIDER */
+.slider{
+    position:relative;
+    max-width:800px;
+    margin:40px auto;
+    overflow:hidden;
+    border-radius:15px;
+}
+.slides{
+    display:flex;
+    transition:0.5s;
+}
+.slides img{
+    width:100%;
+}
+
+/* SECTION */
+.section{
+    padding:80px 20px;
+    text-align:center;
+    background-color:rgba(63, 33, 33, 0.84) ;
+}
+
+
+
+/* LOCATION + CONTACT (map left, contact right) */
+.loc-wrap{
+    display:grid;
+    grid-template-columns:1.7fr 1fr;
+    gap:36px;
+    max-width:1250px;
+    margin:0 auto;
+    align-items:start;
+}
+.loc-map iframe{height:400px;}
+.contact{padding-top:0;}
+.contact a{
+    display:block;
+    margin:14px 0;
+    padding:15px 18px;
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:12px;
+    color:inherit;
+    text-decoration:none;
+    font-weight:500;
+    text-align:left;
+    transition:background .25s, transform .25s;
+}
+.contact a:hover{background:rgba(255,255,255,0.14);transform:translateX(4px);}
+.contact h2{margin-bottom:6px;}
+@media(max-width:800px){
+    .loc-wrap{grid-template-columns:1fr;gap:30px;}
+    .loc-map iframe{height:300px;}
+}
+
+
+/* FOOTER */
+.site-footer{background:#1d1212;color:rgba(255,255,255,.78);padding:60px 6% 26px;text-align:left;}
+.f-inner{max-width:1250px;margin:0 auto;}
+.f-top{display:flex;justify-content:space-between;align-items:center;gap:30px;flex-wrap:wrap;padding-bottom:46px;border-bottom:1px solid rgba(255,255,255,.12);}
+.f-msg h4{display:flex;align-items:center;gap:10px;color:#e3c46e;font-size:21px;font-weight:600;margin-bottom:16px;}
+.f-msg form{display:flex;gap:12px;flex-wrap:wrap;}
+.f-msg input{flex:1 1 190px;min-width:0;height:54px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-family:inherit;outline:none;}
+.f-msg input::placeholder{color:rgba(255,255,255,.5);}
+.f-msg input:focus{border-color:#e3c46e;}
+.f-msg button{width:62px;height:54px;border:0;border-radius:12px;background:#e3c46e;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+.f-msg button:hover{transform:translateY(-2px);}
+.f-msg button svg{width:22px;height:22px;fill:#2a1717;}
+.f-logo img{height:96px;width:auto;display:block;opacity:.95;}
+.f-main{display:grid;grid-template-columns:1.4fr 2.6fr;gap:50px;padding:46px 0;}
+.f-brand h3{font-size:34px;font-weight:600;color:#e3c46e;line-height:1.15;margin-bottom:16px;}
+.f-brand p{font-size:15px;line-height:1.9;color:rgba(255,255,255,.65);margin-bottom:22px;}
+.f-social{display:flex;gap:12px;}
+.f-social a{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;transition:background .25s, transform .25s;}
+.f-social a:hover{background:#e3c46e;transform:translateY(-3px);}
+.f-social svg{width:21px;height:21px;fill:#fff;}
+.f-social a:hover svg{fill:#2a1717;}
+.f-links{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;}
+.f-links h5{color:#fff;font-size:15px;font-weight:600;margin-bottom:16px;letter-spacing:.3px;}
+.f-links a,.f-links span{display:block;color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;line-height:1.5;margin-bottom:13px;transition:color .2s;}
+.f-links a:hover{color:#e3c46e;}
+.f-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:24px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:14.5px;color:rgba(255,255,255,.6);}
+.f-bottom nav a{color:rgba(255,255,255,.8);text-decoration:none;margin-left:26px;}
+.f-bottom nav a:hover{color:#e3c46e;}
+@media(max-width:900px){.f-main{grid-template-columns:1fr;gap:34px;}.f-links{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.site-footer{padding:44px 6% 22px;}.f-logo{display:none;}.f-bottom nav a{margin:0 18px 0 0;}}
+
+/* SCROLL REVEAL */
+.js .reveal{opacity:0;transform:translateY(46px);transition:opacity .8s ease, transform .8s ease;}
+.js .reveal.in{opacity:1;transform:none;}
+@media(prefers-reduced-motion:reduce){.js .reveal{opacity:1;transform:none;transition:none;}}
+
+/* MAP */
+iframe{
+    width:100%;
+    height:300px;
+    border-radius:15px;
+    margin-top:20px;
+}
+
+@keyframes fade{
+    from{opacity:0;transform:translateY(20px);}
+    to{opacity:1;transform:translateY(0);}
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    
+    <div class="logo">RCF</div>
+    <div>
+        <span class="menu-btn" onclick="toggleMenu()">☰</span>
+    </div>
+    <div class="dropdown" id="menu">
+        <a href="#home">HOME</a>
+        <a href="#contact">CONTACT</a>
+        <a href="manager.html">ADMIN</a>
+        <a href="checkbill.html">CHECK YOUR BILL</a>
+        
+    </div>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="home">
+    <div class="hero-text">
+        <img src="public/logorcf.png" alt="Logo" style="width:150px;height:190px;">
+        <h1>ROYAL COLLECTION</h1>
+        <h1>& FANCY</h1>
+        <a href="product.html" class="shop-btn">Shop Now</a>
+    </div>
+    <div class="hero-photo">
+        <img src="public/girl.png" alt="Royal Collection model">
+    </div>
+</section>
+
+
+
+
+
+<!-- ABOUT -->
+<section class="section" id="about">
+<h2 class="reveal">About Us</h2>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align:justify;">
+✧ Welcome to Royal Collection & Fancy, Karambakudi ✨ — where style meets elegance and every detail speaks luxury. Located in the heart of Karambakudi, our boutique is not just a shop… it’s a complete fashion experience crafted especially for customers who love premium quality and classy collections 👑🛍️. From the moment you step inside, you’ll feel the royal vibe, sophisticated ambiance, and beautifully arranged collections that make shopping truly enjoyable.</p>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align:justify; ">
+✧ At Royal Collection & Fancy, we believe every customer deserves to feel confident, stylish, and special 💎. That’s why we carefully select each product with attention to trend, quality, and uniqueness. Whether you’re looking for trendy accessories, fancy items, stylish handbags, elegant gift articles, or daily-use fashion essentials, our store offers a wide variety that suits all age groups and occasions 🎀👜. From festive celebrations to casual outings, we have something perfect for every mood and moment.</p>
+
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align:justify; ">
+✧ Our collection reflects modern fashion blended with traditional charm 🌸✨. We continuously update our stock to bring you the latest trends at affordable premium pricing. Every product is chosen to give you a classy look without compromising comfort and quality. The finishing, designs, colors, and detailing in our items are selected to match today’s fashion standards while keeping customer satisfaction as our top priority ❤️.</p>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align: justify; ">
+✧ Customer happiness is our biggest achievement 😊. At Royal Collection & Fancy, we focus on providing friendly service, comfortable shopping space, and a welcoming environment where everyone feels valued. We guide our customers personally to help them choose the best products that match their style and needs. Our goal is not just to sell, but to build long-term trust and relationships with every customer who walks through our doors 🤝✨.</p>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align: justify; ">
+✧ What makes us special? It’s our passion for perfection and our dedication to bringing the best to Karambakudi 👑. We aim to be your first choice for fancy and fashion items by offering premium collections that stand out in quality and appearance. Every visit to our shop gives you new arrivals, exciting options, and beautiful designs that make you come back again and again 💖.</p>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align: justify; ">
+✧ We also love staying connected with our customers online! Follow us on Instagram at @rcfxncy 📸✨ to explore our latest collections, new arrivals, special offers, and exclusive updates. Our Instagram page showcases our trending items and gives you a closer look at our premium range. Stay updated, stay stylish, and be part of our growing fashion family 💕.</p>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align: justify; ">
+✧ Royal Collection & Fancy, Karambakudi is more than just a store — it’s a destination for fashion lovers who appreciate elegance, quality, and a royal touch 👑🌟. Step in to discover style, step out with confidence. Let us add sparkle to your everyday look and charm to your special occasions ✨🎉.</p>
+<p class="reveal" style="max-width:100%;margin:auto;margin-top:20px;line-height:1.8; text-align: justify; ">
+✧ Visit us today and experience the royal difference at Royal Collection & Fancy, Karambakudi — where every purchase feels premium and every customer is treated like royalty 👑🛍️💎.</p>
+</section>
+
+<!-- LOCATION + CONTACT -->
+<section class="section" id="location">
+<div class="loc-wrap">
+    <div class="loc-map reveal">
+        <h2>Our Location</h2>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3923.5250895902404!2d79.1417913!3d10.459209!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3baaa7004f7e4d3b%3A0xf5518c15ed476cae!2sROYAL%20COLLECTION%20%26%20FANCY!5e0!3m2!1sen!2sin!4v1771263276451!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <div class="contact reveal" id="contact">
+        <h2>Contact Us</h2>
+        <a href="https://wa.me/917418592010" target="_blank">💬 WhatsApp: +91 7418592010</a>
+        <a href="https://instagram.com/rcfxncy/" target="_blank">📸 Instagram: @rcfxncy</a>
+        <a href="mailto:rcfxncy@gmail.com" target="_blank">✉️ Gmail: rcfxncy@gmail.com</a>
+    </div>
+</div>
+</section>
+
+<script>
+function toggleMenu(){
+    const menu=document.getElementById("menu");
+    menu.style.display=menu.style.display==="flex"?"none":"flex";
+}
+
+
+/* AUTO SLIDER */
+let index=0;
+setInterval(()=>{
+    const slides=document.getElementById("slides");
+    index++;
+    if(index>2) index=0;
+    slides.style.transform="translateX(-"+index*100+"%)";
+},3000);
+
+/* HERO: slides away (text left, photo right) and white background fades to dark while scrolling to About */
+(function(){
+    const hero=document.getElementById('home');
+    const txt=hero.querySelector('.hero-text'), photo=hero.querySelector('.hero-photo');
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const from=[240,248,255], to=[49,45,45];
+    let ticking=false;
+    function update(){
+        ticking=false;
+        const r=hero.getBoundingClientRect();
+        const p=Math.min(1,Math.max(0,-r.top/(r.height*0.9)));
+        const e=p*p*(3-2*p);
+        txt.style.transform='translateX('+(-e*115)+'%)';
+        txt.style.opacity=1-e;
+        photo.style.transform='translateX('+(e*115)+'%)';
+        photo.style.opacity=1-e;
+        hero.style.backgroundColor='rgb('+from.map((f,i)=>Math.round(f+(to[i]-f)*e)).join(',')+')';
+    }
+    window.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update);} },{passive:true});
+    update();
+})();
+
+/* Footer message -> opens WhatsApp with the text filled in */
+function sendMsg(e){
+    e.preventDefault();
+    const n=document.getElementById('fName').value.trim(), m=document.getElementById('fMsg').value.trim();
+    if(!m){ document.getElementById('fMsg').focus(); return false; }
+    const text='Hi Royal Collection & Fancy, '+(n?'I am '+n+'. ':'')+m;
+    window.open('https://wa.me/917418592010?text='+encodeURIComponent(text),'_blank');
+    return false;
+}
+
+/* Sections fade/slide up when they come into view */
+(function(){
+    const els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){ els.forEach(e=>e.classList.add('in')); return; }
+    const io=new IntersectionObserver((entries)=>{
+        entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+    },{threshold:0.12});
+    els.forEach(e=>io.observe(e));
+})();
+</script>
+<footer class="site-footer">
+<div class="f-inner">
+
+    <div class="f-top">
+        <div class="f-msg">
+            <h4><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e3c46e" stroke-width="1.6"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M3 7l9 6.5L21 7"/></svg> Send us a message</h4>
+            <form onsubmit="return sendMsg(event)">
+                <input type="text" id="fName" placeholder="Enter your name">
+                <input type="text" id="fMsg" placeholder="What are you looking for?">
+                <button type="submit" aria-label="Send on WhatsApp"><svg viewBox="0 0 24 24"><path d="M2.5 11.3 21 3.2c.8-.35 1.6.45 1.25 1.25l-8.1 18.5c-.4.9-1.7.85-2-.1l-2.1-6.6-6.6-2.1c-.95-.3-1-1.6-.05-2z"/></svg></button>
+            </form>
+        </div>
+        <div class="f-logo"><img src="public/logorcf.png" alt="RCF"></div>
+    </div>
+
+    <div class="f-main">
+        <div class="f-brand">
+            <h3>Royal Collection &amp; Fancy.</h3>
+            <p>Premium fashion, accessories, handbags and gifts for every occasion, in the heart of Karambakudi. Come in and feel the royal vibe.</p>
+            <div class="f-social">
+                <a href="https://wa.me/917418592010" target="_blank" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm5.2 13.9c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.1-.3.3-.1.6.2.3.8 1.300 1.700 2.100 1.200 1 2.100 1.300 2.400 1.500.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.900.9c.3.1.5.2.5.3.1.2.1.8-.1 1.400z"/></svg></a>
+                <a href="https://instagram.com/rcfxncy/" target="_blank" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M7.5 2h9A5.500 5.500 0 0 1 22 7.500v9a5.500 5.500 0 0 1-5.500 5.500h-9A5.500 5.500 0 0 1 2 16.500v-9A5.500 5.500 0 0 1 7.500 2zm0 2A3.500 3.500 0 0 0 4 7.500v9A3.500 3.500 0 0 0 7.500 20h9a3.500 3.500 0 0 0 3.500-3.500v-9A3.500 3.500 0 0 0 16.500 4h-9zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm5.300-3.300a1.200 1.200 0 1 1 0 2.400 1.200 1.200 0 0 1 0-2.400z"/></svg></a>
+                <a href="mailto:rcfxncy@gmail.com" aria-label="Email"><svg viewBox="0 0 24 24"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.500 2 7.500 5.300L19.500 7h-15zM4 9.300V17h16V9.300l-8 5.600-8-5.600z"/></svg></a>
+            </div>
+        </div>
+        <div class="f-links">
+            <div>
+                <h5>Quick Links</h5>
+                <a href="#home">Home</a>
+                <a href="#about">About Us</a>
+                <a href="#location">Our Location</a>
+                <a href="#contact">Contact Us</a>
+            </div>
+            <div>
+                <h5>Customers</h5>
+                <a href="checkbill.html">Check Your Bill</a>
+                <a href="https://wa.me/917418592010" target="_blank">Order on WhatsApp</a>
+                <a href="https://instagram.com/rcfxncy/" target="_blank">New Arrivals</a>
+            </div>
+            <div>
+                <h5>Visit Us</h5>
+                <span>20-1, Vaniya St,<br>Karambakudi</span>
+                <a href="https://www.google.com/maps/search/?api=1&query=ROYAL+COLLECTION+%26+FANCY+Karambakkudi" target="_blank">Get Directions</a>
+            </div>
+            <div>
+                <h5>Get in Touch</h5>
+                <a href="https://wa.me/917418592010" target="_blank">+91 7418592010</a>
+                <a href="mailto:rcfxncy@gmail.com">rcfxncy@gmail.com</a>
+                <a href="https://instagram.com/rcfxncy/" target="_blank">@rcfxncy</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="f-bottom">
+        <div>&copy; 2026 Royal Collection &amp; Fancy. All rights reserved.</div>
+        <nav><a href="checkbill.html">Check Your Bill</a><a href="#contact">Contact</a></nav>
+    </div>
+
+</div>
+</footer>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
