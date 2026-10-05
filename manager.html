@@ -1030,8 +1030,8 @@ function renderApp(){
   const me = !isMgr ? state.cashiers.find(c=>c.username===state.session.username) : null;
   const unreadMsgCount = me ? state.messages.filter(m=>(m.to==='all'||m.to===me.id) && !(m.readBy||[]).includes(me.id)).length : 0;
   const navItems = isMgr
-    ? [['dashboard','🏠','Dashboard'],['billing','🧾','New Bill'],['inventory','📦','Products'],['customers','👤','Customer'],['billdesk','🗂️','Bill Desk'],['expenses','💸','Expenses'],['cashiers','🔑','Staff Account'],['reports','📊','Report Analyzer'],['messenger','💬','Messenger'],['calculator','🧮','Calculator'],['settings','⚙️','Settings'],['help','❓','Help'],['webproducts','🛍️','Website Products']]
-    : [['billing','🧾','New Bill'],['inventory','📦','Products'],['customers','👤','Customer'],['mysales','📊','My Sales'],['messages','📨','Messages'],['calculator','🧮','Calculator'],['account','🔒','Account'],['help','❓','Help']];
+    ? [['dashboard','🏠','Dashboard'],['billing','🧾','New Bill'],['inventory','📦','Products'],['customers','👤','Customer'],['billdesk','🗂️','Bill Desk'],['expenses','💸','Expenses'],['cashiers','🔑','Staff Account'],['reports','📊','Report Analyzer'],['messenger','💬','Messenger'],['settings','⚙️','Settings'],['help','❓','Help'],['webproducts','🛍️','Website Products']]
+    : [['billing','🧾','New Bill'],['inventory','📦','Products'],['customers','👤','Customer'],['mysales','📊','My Sales'],['messages','📨','Messages'],['account','🔒','Account'],['help','❓','Help']];
   const titles = {
     dashboard:['Dashboard','Quick overview of your shop'],
     help:['Help & Getting Started','Guides for using Nexora'],
@@ -1044,7 +1044,6 @@ function renderApp(){
     messenger:['Messenger','Message individual staff or everyone'],
     messages:['Messages','Messages from your manager'],
     billdesk:['Bill Desk','All bills, invoice search & records'],
-    calculator:['Calculator','Basic, discount & GST calculator'],
     settings:['Shop Settings','Name, logo, address & contact'],
     mysales:['My Sales','Your billing history'],
     account:['My Account','Manage your login'],
@@ -1095,7 +1094,6 @@ function renderApp(){
       ${state.tab==='messenger' && isMgr ? renderMessenger() : ''}
       ${state.tab==='messages' && !isMgr ? renderStaffMessages() : ''}
       ${state.tab==='billdesk' && isMgr ? renderBillDesk() : ''}
-      ${state.tab==='calculator' ? renderCalculatorPage() : ''}
       ${state.tab==='settings' && isMgr ? renderSettings() : ''}
       ${state.tab==='expenses' && isMgr ? renderExpenses() : ''}
       ${state.tab==='dashboard' && isMgr ? renderDashboard() : ''}
@@ -1130,7 +1128,7 @@ function attachAppHandlers(){
   attachInventoryHandlers();
   attachCustomerHandlers();
   if(state.session.role==='manager'){
-    attachCashierHandlers(); attachReportHandlers(); attachSettingsHandlers(); attachExpenseHandlers(); attachDashboardHandlers(); attachMessengerHandlers(); attachBillDeskHandlers(); attachCalculatorHandlers();
+    attachCashierHandlers(); attachReportHandlers(); attachSettingsHandlers(); attachExpenseHandlers(); attachDashboardHandlers(); attachMessengerHandlers(); attachBillDeskHandlers();
   } else {
     attachAccountHandlers();
   }
@@ -1916,6 +1914,43 @@ function printTplMinimal(bill){
 
 
 // ============ INVENTORY ============
+let __invSel = new Set();
+function invUpdateCount(){
+  const c = document.getElementById('invSelCount'); if(c) c.textContent = __invSel.size;
+  const all = document.getElementById('invAll');
+  if(all) all.checked = state.products.length>0 && state.products.every(p=>__invSel.has(p.id));
+}
+function invToggle(id, on){ if(on) __invSel.add(id); else __invSel.delete(id); invUpdateCount(); }
+function invSelectAll(on){
+  // only rows currently visible (respects the search box); no re-render so the search text stays
+  document.querySelectorAll('#invTableBody tr').forEach(row=>{
+    if(row.style.display==='none') return;
+    const chk = row.querySelector('.inv-chk'); if(!chk) return;
+    chk.checked = on;
+    const m = chk.getAttribute('onchange').match(/'([^']+)'/);
+    if(m){ if(on) __invSel.add(m[1]); else __invSel.delete(m[1]); }
+  });
+  invUpdateCount();
+}
+function deleteSelectedProducts(){
+  if(state.session.role!=='manager') return;
+  const ids = state.products.filter(p=>__invSel.has(p.id)).map(p=>p.id);
+  if(!ids.length){ alert('Tick the products you want to delete first'); return; }
+  openModal(`
+    <h3 style="color:var(--red);">Delete ${ids.length} product${ids.length===1?'':'s'}?</h3>
+    <div style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:18px;">The selected product${ids.length===1?'':'s'} will be permanently removed from Products. Old bills are not affected. This cannot be undone.</div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal()">Cancel</button>
+      <button class="btn" style="flex:1; background:var(--red); color:#fff;" onclick="confirmDeleteSelectedProducts()">Yes, Delete</button>
+    </div>`);
+}
+function confirmDeleteSelectedProducts(){
+  const n = __invSel.size;
+  state.products = state.products.filter(p=>!__invSel.has(p.id));
+  __invSel.clear();
+  saveState(); closeModal(); render();
+  showSuccessToast(n + ' product' + (n===1?'':'s') + ' deleted');
+}
 function renderInventory(){
   const isMgr = state.session.role==='manager';
   return `
@@ -1926,16 +1961,18 @@ function renderInventory(){
       ${isMgr ? `<button class="btn btn-outline" id="logWastageBtn">🗑 Log Damage/Wastage</button>` : ''}
       ${isMgr ? `<button class="btn btn-outline" id="viewPOBtn">📋 Purchase Orders${state.purchaseOrders.filter(p=>p.status==='Pending').length?` (${state.purchaseOrders.filter(p=>p.status==='Pending').length})`:''}</button>` : ''}
       ${isMgr ? `<button class="btn btn-outline" id="importProductsBtn">📥 Import Excel</button>` : ''}
+      ${isMgr && state.products.length ? `<button class="btn" id="invDelSelBtn" style="background:var(--red); color:#fff;" onclick="deleteSelectedProducts()">🗑 Delete Selected (<span id="invSelCount">${__invSel.size}</span>)</button>` : ''}
       ${isMgr ? `<button class="btn btn-green" id="addProductBtn">+ Add Product</button>` : ''}
     </div>
   </div>
   <div class="card">
     ${state.products.length ? `
     <div class="table-wrap"><table>
-      <thead><tr><th></th><th>Product</th><th>Category</th><th>Code</th><th>MRP</th><th>Price</th><th>GST %</th><th>Stock</th><th>Status</th><th>${isMgr?'Adjust':'Add Stock'}</th>${isMgr?'<th></th>':''}</tr></thead>
+      <thead><tr>${isMgr?`<th><input type="checkbox" id="invAll" title="Select all shown" onchange="invSelectAll(this.checked)" ${state.products.length && state.products.every(p=>__invSel.has(p.id))?'checked':''}></th>`:''}<th></th><th>Product</th><th>Category</th><th>Code</th><th>MRP</th><th>Price</th><th>GST %</th><th>Stock</th><th>Status</th><th>${isMgr?'Adjust':'Add Stock'}</th>${isMgr?'<th></th>':''}</tr></thead>
       <tbody id="invTableBody">
       ${[...state.products].sort((a,b)=>(b.favorite?1:0)-(a.favorite?1:0)).map(p=>`
         <tr data-name="${p.name.toLowerCase()}" data-code="${(p.itemCode||'').toLowerCase()}" data-barcode="${(p.barcode||'').toLowerCase()}">
+          ${isMgr?`<td><input type="checkbox" class="inv-chk" ${__invSel.has(p.id)?'checked':''} onchange="invToggle('${p.id}', this.checked)"></td>`:''}
           <td><button class="mini-btn" onclick="toggleFavorite('${p.id}')" title="Favorite" style="border:none; background:none; font-size:15px;">${p.favorite?'⭐':'☆'}</button></td>
           <td>${p.image?`<img src="${p.image}" style="width:22px;height:22px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:6px;">`:''}${p.name}</td>
           <td>${p.category||'—'}</td>
@@ -1982,7 +2019,7 @@ function saveStockAdjust(id, dir){
 }
 function deleteProduct(id){
   if(state.session.role!=='manager') return;
-  if(confirm('Delete this product?')){ state.products = state.products.filter(p=>p.id!==id); saveState(); render(); }
+  if(confirm('Delete this product?')){ state.products = state.products.filter(p=>p.id!==id); __invSel.delete(id); saveState(); render(); }
 }
 function attachInventoryHandlers(){
   const btn = document.getElementById('addProductBtn');
@@ -2399,14 +2436,144 @@ function confirmImportProducts(){
 }
 
 // ============ CUSTOMERS ============
+function custList(){
+  const q = (state.customerSearchQuery||'').trim().toLowerCase();
+  const f = state.customerDueFilter || 'all';
+  let list = state.customers;
+  if(q) list = list.filter(c=>c.name.toLowerCase().includes(q) || (c.phone||'').includes(q));
+  if(f==='due') list = list.filter(c=>(c.dueAmount||0)>0);
+  else if(f==='settled') list = list.filter(c=>!((c.dueAmount||0)>0));
+  return list;
+}
+function setCustDueFilter(f){ state.customerDueFilter = f; render(); }
+function exportCustomersExcel(){
+  const list = custList();
+  if(!list.length){ alert('No customers to export'); return; }
+  if(typeof XLSX === 'undefined'){ alert('Excel library did not load. Check your internet and try again.'); return; }
+  const rows = list.map(c=>({ 'Name':c.name, 'Phone':c.phone||'', 'Address':c.address||'', 'Due Amount':Number(c.dueAmount||0) }));
+  const ws = XLSX.utils.json_to_sheet(rows, {header:['Name','Phone','Address','Due Amount']});
+  ws['!cols'] = [{wch:24},{wch:14},{wch:30},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Customers');
+  const f = state.customerDueFilter || 'all';
+  XLSX.writeFile(wb, `customers${f==='due'?'_due':f==='settled'?'_settled':''}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+let __importedCust = [];
+function openImportCustomersModal(){
+  __importedCust = [];
+  openModal(`
+    <h3>📥 Import Customers from Excel</h3>
+    <div style="font-size:12.5px; color:var(--muted); margin-bottom:14px; line-height:1.5;">
+      Upload an .xlsx or .csv file with columns <b>Name, Phone, Address, Due Amount</b>. Only <b>Name</b> is required.
+      If a phone number already exists, that customer is updated instead of duplicated.
+    </div>
+    <div style="background:var(--paper-shadow); border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div style="font-size:12.5px;">Don't have a file ready?</div>
+      <button class="btn btn-outline btn-sm" onclick="downloadCustomerTemplate()">⬇ Download Sample Template</button>
+    </div>
+    <label>Choose Excel/CSV file</label>
+    <input type="file" id="cImportFile" accept=".xlsx,.xls,.csv" style="margin-bottom:6px;">
+    <div id="cImportStatus" style="font-size:12px; color:var(--muted); margin-bottom:14px;"></div>
+    <div id="cImportPreview"></div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green" style="flex:1;" id="cImportConfirm" disabled onclick="confirmImportCustomers()">Import 0 Customers</button>
+    </div>`);
+  document.getElementById('cImportFile').addEventListener('change', handleCustImportFile);
+}
+function downloadCustomerTemplate(){
+  const rows = [
+    {'Name':'Ravi Kumar','Phone':'9876543210','Address':'Anna Nagar, Chennai','Due Amount':0},
+    {'Name':'Meena S','Phone':'9123456780','Address':'','Due Amount':1500}
+  ];
+  const ws = XLSX.utils.json_to_sheet(rows, {header:['Name','Phone','Address','Due Amount']});
+  ws['!cols'] = [{wch:24},{wch:14},{wch:30},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Customers');
+  XLSX.writeFile(wb, 'customer_import_template.xlsx');
+}
+function handleCustImportFile(e){
+  const file = e.target.files[0];
+  const status = document.getElementById('cImportStatus');
+  const prev = document.getElementById('cImportPreview');
+  const btn = document.getElementById('cImportConfirm');
+  __importedCust = []; btn.disabled = true; btn.textContent = 'Import 0 Customers'; prev.innerHTML = '';
+  if(!file) return;
+  status.style.color = 'var(--muted)'; status.textContent = 'Reading file...';
+  const reader = new FileReader();
+  reader.onload = evt=>{
+    try{
+      const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      if(!rows.length){ status.style.color='var(--red)'; status.textContent='No rows found in the first sheet.'; return; }
+      const map = {name:'name', customername:'name', customer:'name', phone:'phone', mobile:'phone', mobileno:'phone', mobilenumber:'phone', phoneno:'phone', phonenumber:'phone', address:'address', due:'due', dueamount:'due', pending:'due', balance:'due'};
+      const parsed = [], errors = [];
+      rows.forEach((row,i)=>{
+        const o = {}; let hasDue = false;
+        Object.keys(row).forEach(k=>{ const m = map[__normKey(k)]; if(m){ o[m] = row[k]; if(m==='due') hasDue = true; } });
+        const name = String(o.name||'').trim();
+        if(!name){ if(Object.values(row).some(v=>String(v).trim())) errors.push(`Row ${i+2}: missing Name, skipped`); return; }
+        let phone = String(o.phone||'').trim();
+        const digits = phone.replace(/\D/g,'');
+        if(digits.length>=10) phone = digits.slice(-10);
+        parsed.push({ name, phone, address:String(o.address||'').trim(), due: hasDue ? Math.max(0, parseFloat(o.due)||0) : null });
+      });
+      __importedCust = parsed;
+      status.style.color = errors.length ? 'var(--amber)' : 'var(--muted)';
+      status.textContent = `Found ${parsed.length} customer${parsed.length===1?'':'s'} in "${file.name}".` + (errors.length ? ` ${errors.length} row(s) skipped.` : '');
+      if(parsed.length){
+        prev.innerHTML = `<div class="table-wrap" style="max-height:220px; overflow:auto;"><table style="font-size:11.5px;">
+          <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th>Due</th></tr></thead>
+          <tbody>${parsed.slice(0,50).map(c=>`<tr><td>${c.name}</td><td class="num">${c.phone||'—'}</td><td>${c.address||'—'}</td><td class="num">${c.due==null?'—':c.due.toFixed(2)}</td></tr>`).join('')}</tbody>
+        </table></div>${parsed.length>50?`<div style="font-size:11px; color:var(--muted); margin-top:6px;">Showing first 50 of ${parsed.length} rows.</div>`:''}
+        ${errors.length?`<div style="font-size:11px; color:var(--amber); margin-top:8px;">${errors.slice(0,8).join('<br>')}</div>`:''}`;
+      }
+      btn.disabled = !parsed.length;
+      btn.textContent = `Import ${parsed.length} Customer${parsed.length===1?'':'s'}`;
+    }catch(err){
+      status.style.color='var(--red)'; status.textContent='Could not read this file. Make sure it is a valid .xlsx/.csv exported from Excel.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function confirmImportCustomers(){
+  if(!__importedCust.length) return;
+  let added=0, updated=0;
+  __importedCust.forEach(r=>{
+    const existing = r.phone ? state.customers.find(c=>(c.phone||'')===r.phone) : null;
+    if(existing){
+      existing.name = r.name;
+      if(r.address) existing.address = r.address;
+      if(r.due!=null) existing.dueAmount = r.due;
+      updated++;
+    } else {
+      state.customers.push({ id:uid(), name:r.name, phone:r.phone, address:r.address, dueAmount:r.due||0 });
+      added++;
+    }
+  });
+  saveState(); closeModal(); render();
+  showSuccessToast(`Imported: ${added} added, ${updated} updated`);
+  __importedCust = [];
+}
 function renderCustomers(){
   const isMgr = state.session.role==='manager';
   const q = (state.customerSearchQuery||'').trim().toLowerCase();
-  const list = q ? state.customers.filter(c=>c.name.toLowerCase().includes(q) || (c.phone||'').includes(q)) : state.customers;
+  const list = custList();
+  const dueFilter = state.customerDueFilter || 'all';
+  const totalDue = list.reduce((s,c)=>s+(c.dueAmount||0),0);
   return `
   <div class="row-between">
     <div style="max-width:320px; flex:1;"><input type="text" id="custPageSearch" placeholder="🔍 Search by name or mobile number" value="${state.customerSearchQuery||''}"></div>
-    <button class="btn btn-green" id="addCustBtn">+ Add Customer</button>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      ${isMgr ? `<button class="btn btn-outline" id="importCustBtn">📥 Import Excel</button><button class="btn btn-outline" id="exportCustBtn">⬇ Export Excel</button>` : ''}
+      <button class="btn btn-green" id="addCustBtn">+ Add Customer</button>
+    </div>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+    <button class="btn btn-sm ${dueFilter==='all'?'btn-green':'btn-outline'}" onclick="setCustDueFilter('all')">All</button>
+    <button class="btn btn-sm ${dueFilter==='due'?'btn-green':'btn-outline'}" onclick="setCustDueFilter('due')">Due only</button>
+    <button class="btn btn-sm ${dueFilter==='settled'?'btn-green':'btn-outline'}" onclick="setCustDueFilter('settled')">Settled</button>
+    <span style="font-size:12.5px; color:var(--muted); margin-left:6px;">${list.length} customer${list.length===1?'':'s'} · Total due <strong class="num">${money(totalDue)}</strong></span>
   </div>
   <div class="card">
     ${list.length ? `
@@ -2419,7 +2586,7 @@ function renderCustomers(){
       ${isMgr ? `<td>${(c.dueAmount||0)>0 ? `<button class="btn btn-outline btn-sm" onclick="collectPayment('${c.id}')">Collect</button>` : '<span class="pill paid">Settled</span>'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openEditCustomerModal('${c.id}')">Edit</button></td>
       <td><button class="del-row" onclick="deleteCustomer('${c.id}')">✕</button></td>` : ''}</tr>`).join('')}
-    </tbody></table></div>` : q ? `<div class="empty-state"><div class="big">🔍</div>No customer matches "${state.customerSearchQuery}".</div>` : `<div class="empty-state"><div class="big">👤</div>No customers yet.</div>`}
+    </tbody></table></div>` : (q || dueFilter!=='all') ? `<div class="empty-state"><div class="big">🔍</div>No customer matches this search / filter.</div>` : `<div class="empty-state"><div class="big">👤</div>No customers yet.</div>`}
   </div>`;
 }
 function sendDueSms(id){
@@ -2479,6 +2646,10 @@ let __editingCustomerId = null;
 function attachCustomerHandlers(){
   const btn = document.getElementById('addCustBtn');
   if(btn) btn.addEventListener('click', ()=>openCustomerModal(null));
+  const impC = document.getElementById('importCustBtn');
+  if(impC) impC.addEventListener('click', openImportCustomersModal);
+  const expC = document.getElementById('exportCustBtn');
+  if(expC) expC.addEventListener('click', exportCustomersExcel);
   const searchInput = document.getElementById('custPageSearch');
   if(searchInput){
     searchInput.addEventListener('input', ()=>{ state.customerSearchQuery = searchInput.value; render(); setTimeout(()=>{ const el=document.getElementById('custPageSearch'); if(el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } }, 0); });
@@ -3340,10 +3511,14 @@ function viewBillDetails(billId){
   `);
 }
 let __bdSel = new Set();
+function setBdFilter(f){ state.billDeskFilter = f; render(); }
 function bdList(){
   const q = (state.billDeskSearchQuery||'').trim().toLowerCase();
   let list = [...state.bills].reverse();
   if(q) list = list.filter(b => (b.invoiceNumber||'').toLowerCase().includes(q) || (b.customerName||'').toLowerCase().includes(q) || (b.customerPhone||'').includes(q));
+  const f = state.billDeskFilter || 'all';
+  if(f==='due') list = list.filter(b => (b.due||0) > 0);
+  else if(f==='paid') list = list.filter(b => !((b.due||0) > 0));
   return list;
 }
 function renderBillDesk(){
@@ -3355,7 +3530,13 @@ function renderBillDesk(){
   </div>
   <div class="card">
     <div class="row-between" style="margin-bottom:6px;">
-      <label style="margin-bottom:0;">All Bills (${list.length})</label>
+      <label style="margin-bottom:0;">${(state.billDeskFilter||'all')==='due'?'Due Bills':(state.billDeskFilter||'all')==='paid'?'Paid Bills':'All Bills'} (${list.length})</label>
+      <span style="font-size:12.5px; color:var(--muted);">Total due shown: <strong class="num">${money(list.reduce((s,b)=>s+Math.max(0,b.due||0),0))}</strong></span>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+      <button class="btn btn-sm ${(state.billDeskFilter||'all')==='all'?'btn-green':'btn-outline'}" onclick="setBdFilter('all')">All</button>
+      <button class="btn btn-sm ${state.billDeskFilter==='due'?'btn-green':'btn-outline'}" onclick="setBdFilter('due')">Due bills</button>
+      <button class="btn btn-sm ${state.billDeskFilter==='paid'?'btn-green':'btn-outline'}" onclick="setBdFilter('paid')">Paid bills</button>
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
       <span style="font-size:12.5px;">Selected: <strong id="bdCount">${__bdSel.size}</strong></span>
@@ -3371,7 +3552,7 @@ function renderBillDesk(){
       <tr><td><input type="checkbox" class="bd-chk" ${__bdSel.has(b.id)?'checked':''} onchange="bdToggle('${b.id}', this.checked)"></td><td>#${b.invoiceNumber||'—'}</td><td>${new Date(b.date).toLocaleDateString('en-IN')}</td><td>${b.customerName}${b.customerPhone?` <span style="color:var(--muted); font-size:11px;">(${b.customerPhone})</span>`:''}</td><td>${b.cashier||'—'}</td>
       <td class="num">${money(b.total)}</td><td class="num">${money(b.paid)}</td><td class="num">${b.due>0?`<span class="pill due">${money(b.due)}</span>`:'—'}</td>
       <td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" onclick="viewBillDetails('${b.id}')">📎 View</button> <button class="btn btn-outline btn-sm" onclick="editBill('${b.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="openReturnModal('${b.id}')">Return</button> <button class="del-row" onclick="confirmDeleteBill('${b.id}')" title="Delete bill">🗑️</button></td></tr>`).join('')}
-    </tbody></table></div>` : `<div class="empty-state"><div class="big">🗂️</div>${q?'No bill matches your search.':'No bills yet.'}</div>`}
+    </tbody></table></div>` : `<div class="empty-state"><div class="big">🗂️</div>${(q||(state.billDeskFilter&&state.billDeskFilter!=='all'))?'No bill matches your search / filter.':'No bills yet.'}</div>`}
   </div>`;
 }
 function attachBillDeskHandlers(){
@@ -3468,116 +3649,6 @@ function deleteBillRecord(billId){
   showSuccessToast('Bill deleted');
 }
 
-// ============ CALCULATOR ============
-let calcState = { display:'0', expr:'', discAmount:'', discPct:'', gstAmount:'', gstPct:'18', gstMode:'add' };
-function renderCalculatorPage(){
-  const mode = state.calcMode || 'basic';
-  return `
-  <div class="role-tabs" style="max-width:420px; margin-bottom:18px;">
-    <div class="role-tab ${mode==='basic'?'active':''}" data-calcmode="basic">🧮 Basic</div>
-    <div class="role-tab ${mode==='discount'?'active':''}" data-calcmode="discount">🏷️ Discount</div>
-    <div class="role-tab ${mode==='gst'?'active':''}" data-calcmode="gst">🧾 GST</div>
-  </div>
-  ${mode==='basic' ? renderBasicCalculator() : mode==='discount' ? renderDiscountCalculator() : renderGstCalculator()}`;
-}
-function renderBasicCalculator(){
-  const keys = ['C','←','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','0','.','=',''];
-  return `
-  <div class="card" style="max-width:340px;">
-    <div id="calcDisplay" style="background:var(--surface-dark); color:#fff; border-radius:12px; padding:20px 16px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:30px; margin-bottom:14px; min-height:48px; overflow-x:auto; white-space:nowrap;">${calcState.display}</div>
-    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-      ${keys.map(k=>{
-        if(k==='') return `<div></div>`;
-        const isOp = ['÷','×','−','+','='].includes(k);
-        const isFn = ['C','←','%'].includes(k);
-        return `<button class="btn ${isOp?'btn-green':'btn-outline'}" data-calckey="${k}" style="padding:16px 0; font-size:17px; ${isFn?'color:var(--red);':''}">${k}</button>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-function renderDiscountCalculator(){
-  const price = parseFloat(calcState.discAmount)||0;
-  const pct = parseFloat(calcState.discPct)||0;
-  const saved = price*(pct/100);
-  const finalPrice = price - saved;
-  return `
-  <div class="card" style="max-width:380px;">
-    <label>Original Price (₹)</label>
-    <input type="number" id="discAmountInput" value="${calcState.discAmount}" placeholder="e.g. 1000" style="margin-bottom:14px;">
-    <label>Discount %</label>
-    <input type="number" id="discPctInput" value="${calcState.discPct}" placeholder="e.g. 20" style="margin-bottom:18px;">
-    <div style="border-top:1px dashed var(--line); padding-top:14px;">
-      <div class="receipt-line"><span>You Save</span><span class="num" style="color:var(--green-dark); font-weight:700;">${money(saved)}</span></div>
-      <div class="receipt-line" style="margin-top:8px;"><span style="font-weight:700;">Final Price</span><span class="num" style="font-size:20px; font-weight:800;">${money(finalPrice)}</span></div>
-    </div>
-  </div>`;
-}
-function renderGstCalculator(){
-  const amt = parseFloat(calcState.gstAmount)||0;
-  const pct = parseFloat(calcState.gstPct)||0;
-  let base, gstAmt, total;
-  if(calcState.gstMode==='add'){ base = amt; gstAmt = amt*(pct/100); total = base+gstAmt; }
-  else { total = amt; base = amt/(1+pct/100); gstAmt = total-base; }
-  return `
-  <div class="card" style="max-width:380px;">
-    <div class="role-tabs" style="margin-bottom:16px;">
-      <div class="role-tab ${calcState.gstMode==='add'?'active':''}" data-gstmode="add">Add GST</div>
-      <div class="role-tab ${calcState.gstMode==='remove'?'active':''}" data-gstmode="remove">Remove GST</div>
-    </div>
-    <label>${calcState.gstMode==='add'?'Amount (before GST)':'Total Amount (GST inclusive)'}</label>
-    <input type="number" id="gstAmountInput" value="${calcState.gstAmount}" placeholder="e.g. 1000" style="margin-bottom:14px;">
-    <label>GST %</label>
-    <select id="gstPctInput" style="margin-bottom:18px;">
-      ${[5,12,18,28].map(p=>`<option value="${p}" ${String(p)===String(calcState.gstPct)?'selected':''}>${p}%</option>`).join('')}
-      <option value="custom" ${!['5','12','18','28'].includes(String(calcState.gstPct))?'selected':''}>Custom</option>
-    </select>
-    ${!['5','12','18','28'].includes(String(calcState.gstPct)) ? `<input type="number" id="gstPctCustomInput" value="${calcState.gstPct}" placeholder="Custom GST %" style="margin-bottom:18px;">` : ''}
-    <div style="border-top:1px dashed var(--line); padding-top:14px;">
-      <div class="receipt-line"><span>Base Amount</span><span class="num">${money(base)}</span></div>
-      <div class="receipt-line" style="margin-top:6px;"><span>CGST (${(pct/2).toFixed(1)}%)</span><span class="num">${money(gstAmt/2)}</span></div>
-      <div class="receipt-line" style="margin-top:6px;"><span>SGST (${(pct/2).toFixed(1)}%)</span><span class="num">${money(gstAmt/2)}</span></div>
-      <div class="receipt-line" style="margin-top:6px;"><span>Total GST</span><span class="num" style="font-weight:700;">${money(gstAmt)}</span></div>
-      <div class="receipt-line" style="margin-top:8px;"><span style="font-weight:700;">Total Amount</span><span class="num" style="font-size:20px; font-weight:800;">${money(total)}</span></div>
-    </div>
-  </div>`;
-}
-function calcEvaluate(expr){
-  try{
-    const sanitized = expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'/100');
-    if(!/^[0-9+\-*/.() ]+$/.test(sanitized)) return null;
-    const result = Function('"use strict"; return ('+sanitized+')')();
-    return (typeof result==='number' && isFinite(result)) ? result : null;
-  }catch(e){ return null; }
-}
-function attachCalculatorHandlers(){
-  document.querySelectorAll('[data-calcmode]').forEach(t=>t.addEventListener('click', ()=>{ state.calcMode = t.dataset.calcmode; render(); }));
-  document.querySelectorAll('[data-calckey]').forEach(btn=>btn.addEventListener('click', ()=>{
-    const k = btn.dataset.calckey;
-    if(k==='C'){ calcState.display='0'; calcState.expr=''; }
-    else if(k==='←'){ calcState.expr = calcState.expr.slice(0,-1); calcState.display = calcState.expr || '0'; }
-    else if(k==='='){
-      const result = calcEvaluate(calcState.expr||calcState.display);
-      calcState.display = result!=null ? String(Math.round(result*100000)/100000) : 'Error';
-      calcState.expr = result!=null ? calcState.display : '';
-    } else {
-      if(calcState.display==='0' && !['+','−','×','÷','%'].includes(k)) calcState.expr = k;
-      else calcState.expr = (calcState.expr||(calcState.display!=='0'?calcState.display:'')) + k;
-      calcState.display = calcState.expr;
-    }
-    render();
-  }));
-  const discAmt = document.getElementById('discAmountInput');
-  if(discAmt) discAmt.addEventListener('input', ()=>{ calcState.discAmount = discAmt.value; render(); setTimeout(()=>{ const el=document.getElementById('discAmountInput'); if(el) el.focus(); },0); });
-  const discPct = document.getElementById('discPctInput');
-  if(discPct) discPct.addEventListener('input', ()=>{ calcState.discPct = discPct.value; render(); setTimeout(()=>{ const el=document.getElementById('discPctInput'); if(el) el.focus(); },0); });
-  document.querySelectorAll('[data-gstmode]').forEach(t=>t.addEventListener('click', ()=>{ calcState.gstMode = t.dataset.gstmode; render(); }));
-  const gstAmt = document.getElementById('gstAmountInput');
-  if(gstAmt) gstAmt.addEventListener('input', ()=>{ calcState.gstAmount = gstAmt.value; render(); setTimeout(()=>{ const el=document.getElementById('gstAmountInput'); if(el) el.focus(); },0); });
-  const gstPct = document.getElementById('gstPctInput');
-  if(gstPct) gstPct.addEventListener('change', ()=>{ calcState.gstPct = gstPct.value==='custom' ? '' : gstPct.value; render(); });
-  const gstPctCustom = document.getElementById('gstPctCustomInput');
-  if(gstPctCustom) gstPctCustom.addEventListener('input', ()=>{ calcState.gstPct = gstPctCustom.value; render(); setTimeout(()=>{ const el=document.getElementById('gstPctCustomInput'); if(el) el.focus(); },0); });
-}
 function openReturnModal(billId){
   const b = state.bills.find(x=>x.id===billId);
   if(!b) return;
