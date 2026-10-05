@@ -447,7 +447,7 @@ let state = {
   appPin: { enabled:false, code:"" }, pinUnlocked: false,
   fontSize: "medium", managers: [], twoFactorEnabled: false, pendingOtp: null,
   bigSaleThreshold: 5000, lastSummarySentDate: "",
-  loginAttempts: {}, sheetsWebhookUrl: "", sheetsyncEnabled: false, updateCheckUrl: "",
+  loginAttempts: {}, sheetsWebhookUrl: "", sheetsyncEnabled: false, liveSheetUrl: "", liveSheetEnabled: false, liveSheetKey: "", updateCheckUrl: "",
   roundOff: false, upiId: "", themePreset: "emerald", biometricEnabled: false, screenshotBlock: false,
   purchaseOrders: [], wastageLog: [], reportsTrendRange: "7d", messages: [],
   printerConnection: { type: "none", deviceName: "" },
@@ -535,6 +535,7 @@ async function pushState(){
       upJson.slice(i, i+CH).forEach(([id,j])=>__billJson.set(id,j));
     }
     if(seq === __saveSeq) __dirty = false;
+    liveSyncSchedule();
   }catch(e){ showSuccessToast('⚠ Offline - changes not saved yet'); setTimeout(saveState, 8000); }
 }
 function forceLogout(msg){
@@ -592,7 +593,7 @@ function recordBillPayment(bill, amount, note){
   bill.due = Math.max(0, (bill.due||0) - applied);
   bill.paid = (bill.paid||0) + applied;
   if(!bill.paymentHistory) bill.paymentHistory = [];
-  bill.paymentHistory.push({date:new Date().toISOString(), amount:applied, balanceAfter:bill.due, note:note||'Payment collected'});
+  bill.paymentHistory.push({date:new Date().toISOString(), amount:applied, balanceAfter:bill.due, note:note||'Payment collected', by:(state.session&&state.session.name)||''});
 }
 function numberToWordsINR(num){
   num = Math.round(num||0);
@@ -1508,7 +1509,7 @@ function completeBill(){
       b.total=t.total; b.paid=paid; b.due=due; b.editedAt=new Date().toISOString();
       if(!b.paymentHistory) b.paymentHistory = [];
       if(paid !== prevPaid){
-        b.paymentHistory.push({date:new Date().toISOString(), amount: paid-prevPaid, balanceAfter: due, note: paid>prevPaid ? 'Payment recorded via bill edit' : 'Bill edited (payment reduced)'});
+        b.paymentHistory.push({date:new Date().toISOString(), amount: paid-prevPaid, balanceAfter: due, note: paid>prevPaid ? 'Payment recorded via bill edit' : 'Bill edited (payment reduced)', by:(state.session&&state.session.name)||''});
       }
     }
     state.currentBill = {customerId:null, items:[]};
@@ -1519,7 +1520,7 @@ function completeBill(){
   }
 
   const invNo = nextInvoiceNo(); state.lastInvoiceNo = invNo;
-  const bill = { id:uid(), invoiceNumber: String(invNo).padStart(4,'0'), invoiceCategory: state.currentBill.invoiceCategory||'', notes: state.currentBill.notes||'', date:new Date().toISOString(), customerId:state.currentBill.customerId, customerName: cust?cust.name:'Walk-in', customerPhone: cust?cust.phone:'', items:state.currentBill.items, subtotal:t.subtotal, gst:t.gst, discountPct:t.discountPct, discountAmt:t.discountAmt, productDiscountTotal:t.productDiscountTotal, additionalCharges:t.additionalCharges, roundOffAmt:t.roundOffAmt, total:t.total, paid, due, cashier: state.session.name, paymentHistory: paid>0 ? [{date:new Date().toISOString(), amount:paid, balanceAfter:due, note:'Initial payment at billing'}] : [] };
+  const bill = { id:uid(), invoiceNumber: String(invNo).padStart(4,'0'), invoiceCategory: state.currentBill.invoiceCategory||'', notes: state.currentBill.notes||'', date:new Date().toISOString(), customerId:state.currentBill.customerId, customerName: cust?cust.name:'Walk-in', customerPhone: cust?cust.phone:'', items:state.currentBill.items, subtotal:t.subtotal, gst:t.gst, discountPct:t.discountPct, discountAmt:t.discountAmt, productDiscountTotal:t.productDiscountTotal, additionalCharges:t.additionalCharges, roundOffAmt:t.roundOffAmt, total:t.total, paid, due, cashier: state.session.name, paymentHistory: paid>0 ? [{date:new Date().toISOString(), amount:paid, balanceAfter:due, note:'Initial payment at billing', by:state.session.name}] : [] };
   state.bills.push(bill);
   state.currentBill = {customerId:null, items:[]};
   if(cust) recalcCustomerDue(cust.id);
@@ -1528,6 +1529,7 @@ function completeBill(){
   syncBillToSheets(bill);
 }
 function syncBillToSheets(bill){
+  if(liveEnabled()) return; // Live Update already sends everything
   if(!state.sheetsyncEnabled || !state.sheetsWebhookUrl) return;
   fetch(state.sheetsWebhookUrl, {
     method:'POST',
@@ -3767,6 +3769,126 @@ function attachReportHandlers(){
   });
 }
 
+// ============ LIVE UPDATE (Google Sheet) ============
+let __live = { timer:null, busy:false, again:false, last:0, msg:'', ok:null };
+function liveEnabled(){ return !!(state.liveSheetEnabled && state.liveSheetUrl); }
+function liveStatusText(){
+  if(!__live.msg) return state.liveSheetEnabled ? 'Waiting for next change' : 'Not synced yet';
+  const t = __live.last ? ' · ' + new Date(__live.last).toLocaleTimeString('en-IN') : '';
+  return (__live.ok===true?'✅ ':__live.ok===false?'⚠ ':'') + __live.msg + (__live.ok===true ? t : '');
+}
+function liveSetStatus(msg, ok){
+  __live.msg = msg; __live.ok = ok;
+  const el = document.getElementById('liveStatus'); if(el){ el.textContent = liveStatusText(); el.style.color = ok===false ? 'var(--red)' : 'var(--muted)'; }
+}
+function liveSyncSchedule(){
+  if(!liveEnabled() || !state.session) return;
+  clearTimeout(__live.timer);
+  __live.timer = setTimeout(()=>liveSyncNow(false), 3000);
+}
+function liveScriptCode(){
+  return `var SECRET = '${state.liveSheetKey||''}';
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+    var d = JSON.parse(e.postData.contents);
+    if (d.key !== SECRET) return out({ ok: false, error: 'Wrong key - copy the latest code from the app' });
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var names = Object.keys(d.sheets);
+    names.forEach(function (name) {
+      var s = d.sheets[name];
+      var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+      var rows = [s.headers].concat(s.rows);
+      var w = s.headers.length;
+      sh.clear();
+      if (sh.getMaxRows() < rows.length) sh.insertRowsAfter(sh.getMaxRows(), rows.length - sh.getMaxRows());
+      if (sh.getMaxColumns() < w) sh.insertColumnsAfter(sh.getMaxColumns(), w - sh.getMaxColumns());
+      (s.textCols || []).forEach(function (c) { sh.getRange(1, c + 1, rows.length, 1).setNumberFormat('@'); });
+      sh.getRange(1, 1, rows.length, w).setValues(rows);
+      sh.getRange(1, 1, 1, w).setFontWeight('bold').setBackground('#e8f0e8');
+      sh.setFrozenRows(1);
+    });
+    var def = ss.getSheetByName('Sheet1');
+    if (def && names.indexOf('Sheet1') < 0 && ss.getSheets().length > 1 && def.getLastRow() === 0) ss.deleteSheet(def);
+    SpreadsheetApp.flush();
+    return out({ ok: true });
+  } catch (err) {
+    return out({ ok: false, error: String(err) });
+  } finally {
+    try { lock.releaseLock(); } catch (x) {}
+  }
+}
+
+function doGet() { return out({ ok: true, msg: 'Live sheet is running' }); }
+function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+`;
+}
+function liveBuildSnapshot(){
+  const dt = iso=>{ if(!iso) return ['','']; const d = new Date(iso); return isNaN(d) ? ['',''] : [d.toLocaleDateString('en-IN'), d.toLocaleTimeString('en-IN')]; };
+  const n = v=>Math.round(Number(v||0)*100)/100;
+  const bills = [...state.bills].sort((a,b)=> a.date<b.date ? -1 : a.date>b.date ? 1 : 0);
+  const billById = {}; bills.forEach(b=>billById[b.id]=b);
+  const perCust = {};
+  bills.forEach(b=>{ if(!b.customerId) return; const o = perCust[b.customerId] || (perCust[b.customerId] = {count:0, billed:0}); o.count++; o.billed += Number(b.total||0); });
+  const S = {};
+  const totalSales = bills.reduce((a,b)=>a+Number(b.total||0),0), totalPaid = bills.reduce((a,b)=>a+Number(b.paid||0),0), totalDue = bills.reduce((a,b)=>a+Math.max(0,Number(b.due||0)),0);
+  S['Summary'] = { headers:['Item','Value'], rows:[
+    ['Shop', state.shopName||''], ['Last updated', new Date().toLocaleString('en-IN')], ['Total bills', bills.length],
+    ['Total sales', n(totalSales)], ['Total paid', n(totalPaid)], ['Total due (bills)', n(totalDue)],
+    ['Customers', state.customers.length], ['Customers with due', state.customers.filter(c=>(c.dueAmount||0)>0).length],
+    ['Products', state.products.length]
+  ]};
+  S['Bills'] = { textCols:[0,4], headers:['Invoice No','Date','Time','Customer','Phone','Cashier','Category','Items','Subtotal','GST','Discount','Extra Charges','Round Off','Total','Paid','Due','Status','Notes','Edited On'],
+    rows: bills.map(b=>{ const [d,t] = dt(b.date); const [ed,et] = dt(b.editedAt);
+      return [b.invoiceNumber||'', d, t, b.customerName||'', b.customerPhone||'', b.cashier||'', b.invoiceCategory||'', (b.items||[]).length, n(b.subtotal), n(b.gst), n(b.discountAmt), n(b.additionalCharges), n(b.roundOffAmt), n(b.total), n(b.paid), n(b.due), (b.due||0)>0?'Due':'Paid', b.notes||'', b.editedAt ? ed+' '+et : '']; }) };
+  const items = [];
+  bills.forEach(b=>(b.items||[]).forEach(it=>{ const [d] = dt(b.date); items.push([b.invoiceNumber||'', d, b.customerName||'', it.name||'', it.variantName||'', it.qty||0, n(it.price), n(it.mrp), it.gstRate||0, n((it.price||0)*(it.qty||0)*(1+(it.gstRate||0)/100))]); }));
+  S['Bill Items'] = { textCols:[0], headers:['Invoice No','Date','Customer','Item','Variant','Qty','Price','MRP','GST %','Line Total'], rows: items };
+  S['Customers'] = { textCols:[1], headers:['Name','Phone','Address','Due Amount','Bills','Total Billed'],
+    rows: state.customers.map(c=>{ const o = perCust[c.id]||{count:0,billed:0}; return [c.name||'', c.phone||'', c.address||'', n(c.dueAmount), o.count, n(o.billed)]; }) };
+  const pays = [];
+  bills.forEach(b=>(b.paymentHistory||[]).forEach(h=>{ const [d,t] = dt(h.date); pays.push([h.date||'', d, t, b.customerName||'', b.customerPhone||'', b.invoiceNumber||'', n(h.amount), n(h.balanceAfter), h.note==='Initial payment at billing' ? 'At billing' : 'Due payment', h.note||'', h.by||'']); }));
+  pays.sort((a,b)=> a[0]<b[0] ? -1 : a[0]>b[0] ? 1 : 0);
+  S['Payments'] = { textCols:[3,4], headers:['Date','Time','Customer','Phone','Invoice No','Amount Paid','Balance After','Type','Note','Received By'], rows: pays.map(r=>r.slice(1)) };
+  const staff = [[state.managerName||'', 'Owner (Manager)', state.managerUsername||'', '', 'Active']];
+  (state.managers||[]).forEach(m=>staff.push([m.name||'', 'Manager', m.username||'', '', 'Active']));
+  (state.cashiers||[]).forEach(c=>staff.push([c.name||'', 'Cashier', c.username||'', c.mobile||'', c.blocked?'Blocked':'Active']));
+  S['Staff'] = { textCols:[3], headers:['Name','Role','Username','Mobile','Status'], rows: staff };
+  S['Products'] = { textCols:[2,3,4], headers:['Name','Category','Item Code','Barcode','HSN/SAC','MRP','Discount %','Price','GST %','Stock','Unit','Reorder Qty','Variants'],
+    rows: state.products.map(p=>[p.name||'', p.category||'', p.itemCode||'', p.barcode||'', p.hsn||'', n(p.mrp), p.discountPct||0, n(p.price), p.gstRate||0, p.stock||0, p.unit||'', p.reorderQty||0, (p.variants||[]).map(v=>typeof v==='string'?v:(v&&v.name)||'').join(', ')]) };
+  S['Expenses'] = { headers:['Date','Category','Amount','Note'], rows: (state.expenses||[]).map(x=>[x.date||'', x.category||'', n(x.amount), x.note||'']) };
+  S['Returns'] = { textCols:[2], headers:['Date','Time','Invoice No','Customer','Items','Refund Total','Processed By'],
+    rows: (state.returns||[]).map(r=>{ const b = billById[r.originalBillId]||{}; const [d,t] = dt(r.date); return [d, t, b.invoiceNumber||'', b.customerName||'', (r.items||[]).map(i=>i.name+' x'+i.qty).join(', '), n(r.refundTotal), r.processedBy||'']; }) };
+  S['Wastage'] = { headers:['Date','Time','Product','Qty','Reason','Logged By'],
+    rows: (state.wastageLog||[]).map(w=>{ const [d,t] = dt(w.date); return [d, t, w.productName||'', w.qty||0, w.reason||'', w.loggedBy||'']; }) };
+  S['Purchase Orders'] = { headers:['Date','Supplier','Items','Est. Cost','Status'],
+    rows: (state.purchaseOrders||[]).map(po=>[dt(po.date)[0], po.supplier||'', (po.items||[]).length, n((po.items||[]).reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0)), po.status||'']) };
+  return S;
+}
+async function liveSyncNow(manual){
+  if(!state.liveSheetUrl || (!manual && !liveEnabled())) return;
+  if(__live.busy){ __live.again = true; return; }
+  __live.busy = true; liveSetStatus('Syncing...', null);
+  try{
+    const payload = JSON.stringify({ key: state.liveSheetKey||'', shop: state.shopName||'', sheets: liveBuildSnapshot() });
+    let r = null;
+    try{ r = await fetch(state.liveSheetUrl, { method:'POST', body: payload }); }catch(e){ r = null; }
+    if(!r){
+      // browser could not read the reply (CORS) - send anyway, we just cannot confirm
+      await fetch(state.liveSheetUrl, { method:'POST', mode:'no-cors', body: payload });
+      __live.last = Date.now(); liveSetStatus('Sent (could not confirm reply)', true);
+    } else {
+      let res; try{ res = await r.json(); }catch(e){ res = { ok:false, error:'Unexpected reply. Redeploy the script with access set to "Anyone".' }; }
+      if(res && res.ok){ __live.last = Date.now(); liveSetStatus('Synced', true); }
+      else liveSetStatus((res && res.error) || 'Sheet did not accept the data', false);
+    }
+  }catch(e){ liveSetStatus('Could not reach Google Sheet. Will retry on the next change.', false); }
+  __live.busy = false;
+  if(__live.again){ __live.again = false; liveSyncSchedule(); }
+}
+
 // ============ SETTINGS (manager) ============
 const THEME_PRESET_LABELS = { emerald:'Emerald', goldgreen:'Gold & Green', purple:'Royal Purple', ocean:'Ocean Blue', classic:'Classic Ink' };
 const PRINT_TPL_LABELS = { classic:'Classic Receipt', thermal58:'Thermal 58mm', thermal80:'Thermal 80mm', a4detailed:'A4 Detailed Invoice', minimal:'Minimal' };
@@ -3782,6 +3904,7 @@ function renderSettingsMain(){
     ['billing','🧾','Billing & Printing', PRINT_TPL_LABELS[state.printTemplate||'classic']],
     ['staff','👥','Manager Accounts', `${1+state.managers.length} account(s)`],
     ['notifications','🔔','Notifications', `Alert above ${money(state.bigSaleThreshold)}`],
+    ['live','⚡','Live Update', liveEnabled() ? 'On · Google Sheet' : 'Off'],
     ['integrations','🔗','Integrations', state.sheetsyncEnabled ? 'Google Sheets: On' : 'Google Sheets: Off'],
     ['backup','☁️','Backup','Download / Restore'],
     ['storage','💾','Database Storage', __storage ? `${(__storage.usedBytes/1048576).toFixed(1)} of ${Math.round(__storage.limitBytes/1048576)} MB used` : 'Check usage'],
@@ -3815,7 +3938,7 @@ function renderSettingsMain(){
 }
 function renderSettingsSub(){
   const sub = state.settingsSubPage;
-  const titles = { theme:'Theme & Display', language:'Language', shopinfo:'Shop Info', billing:'Billing & Printing', staff:'Manager Accounts', notifications:'Notifications', integrations:'Integrations', backup:'Backup', updates:'Updates', privacy:'Privacy & Security', devices:'Linked Devices', about:'About NEXORA' };
+  const titles = { theme:'Theme & Display', language:'Language', shopinfo:'Shop Info', billing:'Billing & Printing', staff:'Manager Accounts', notifications:'Notifications', live:'Live Update', integrations:'Integrations', backup:'Backup', updates:'Updates', privacy:'Privacy & Security', devices:'Linked Devices', about:'About NEXORA' };
   return `<div class="settings-back" id="settingsBackBtn">⮜  ${titles[sub]||'Settings'}</div>${renderSettingsSubContent(sub)}`;
 }
 function renderSettingsSubContent(sub){
@@ -4022,6 +4145,36 @@ function renderSettingsSubContent(sub){
     <input type="number" id="bigSaleThreshold" min="0" value="${state.bigSaleThreshold}" style="margin-bottom:12px;">
     <button class="btn btn-outline" id="enableNotifBtn">Enable Notifications</button>
   </div>`;
+
+  if(sub==='live'){
+    if(!state.liveSheetKey){ state.liveSheetKey = uid()+uid(); saveState(); }
+    const esc = t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `
+  <div class="card" style="max-width:560px; margin-bottom:16px;">
+    <label style="margin-bottom:10px;">⚡ Live Update — Google Sheet</label>
+    <div class="sub" style="text-transform:none; font-family:'Inter'; margin-bottom:12px; line-height:1.55;">Every change in the app (bills, due payments with date &amp; time, customers, staff, products, expenses, returns...) is copied to your Google Sheet within a few seconds. Staff passwords are never sent. You can download the Sheet as Excel (.xlsx) anytime from Google Sheets: File → Download.</div>
+    <label>Apps Script Web App URL</label>
+    <input type="text" id="liveUrl" placeholder="https://script.google.com/macros/s/.../exec" value="${state.liveSheetUrl||''}" style="margin-bottom:10px;">
+    <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-size:13px; color:var(--ink); font-weight:400; margin-bottom:12px;">
+      <input type="checkbox" id="liveToggle" style="width:auto;" ${state.liveSheetEnabled?'checked':''}> Live Update ON
+    </label>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button class="btn btn-green" id="liveSyncBtn">🔄 Sync everything now</button>
+      <span id="liveStatus" style="font-size:12.5px; color:var(--muted);">${liveStatusText()}</span>
+    </div>
+  </div>
+  <div class="card" style="max-width:560px;">
+    <label style="margin-bottom:8px;">One-time setup</label>
+    <ol style="font-size:12.5px; line-height:1.8; padding-left:18px; margin:0 0 12px; color:var(--muted);">
+      <li>Create a new Google Sheet → <b>Extensions → Apps Script</b>.</li>
+      <li>Delete the existing code, paste the code below, and click Save.</li>
+      <li><b>Deploy → New deployment → Web app</b>. Execute as: <b>Me</b>. Who has access: <b>Anyone</b>. Deploy and allow permissions.</li>
+      <li>Copy the Web app URL, paste it above, turn on Live Update and click Sync everything now.</li>
+    </ol>
+    <textarea id="liveScript" readonly style="width:100%; height:150px; font-family:'JetBrains Mono',monospace; font-size:11px; margin-bottom:10px;">${esc(liveScriptCode())}</textarea>
+    <button class="btn btn-outline btn-sm" id="liveCopyBtn">📋 Copy code</button>
+  </div>`;
+  }
 
   if(sub==='integrations') return `
   <div class="card" style="max-width:480px;">
@@ -4378,6 +4531,28 @@ function attachSettingsHandlers(){
       if(remoteVersion !== APP_VERSION){ msg.style.color='var(--amber)'; msg.textContent = `A newer version (${remoteVersion}) is available online. This installed app is ${APP_VERSION}.`; }
       else { msg.style.color='var(--green)'; msg.textContent = `You're up to date (${APP_VERSION}).`; }
     }catch(e){ msg.style.color='var(--red)'; msg.textContent='Could not check — make sure you have internet and the URL is correct.'; }
+  });
+  const liveUrl = document.getElementById('liveUrl');
+  if(liveUrl) liveUrl.addEventListener('change', ()=>{ state.liveSheetUrl = liveUrl.value.trim(); saveState(); });
+  const liveToggle = document.getElementById('liveToggle');
+  if(liveToggle) liveToggle.addEventListener('change', ()=>{
+    state.liveSheetUrl = (liveUrl ? liveUrl.value.trim() : state.liveSheetUrl);
+    if(liveToggle.checked && !state.liveSheetUrl){ alert('Paste the Apps Script Web App URL first.'); liveToggle.checked = false; return; }
+    state.liveSheetEnabled = liveToggle.checked; saveState();
+    if(liveToggle.checked) liveSyncNow(true);
+  });
+  const liveSyncBtn = document.getElementById('liveSyncBtn');
+  if(liveSyncBtn) liveSyncBtn.addEventListener('click', ()=>{
+    state.liveSheetUrl = (liveUrl ? liveUrl.value.trim() : state.liveSheetUrl);
+    if(!state.liveSheetUrl){ alert('Paste the Apps Script Web App URL first.'); return; }
+    saveState(); liveSyncNow(true);
+  });
+  const liveCopyBtn = document.getElementById('liveCopyBtn');
+  if(liveCopyBtn) liveCopyBtn.addEventListener('click', ()=>{
+    const ta = document.getElementById('liveScript');
+    const done = ()=>showSuccessToast('Code copied');
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, ()=>{ ta.select(); document.execCommand('copy'); done(); });
+    else { ta.select(); document.execCommand('copy'); done(); }
   });
   const sheetsUrlInput = document.getElementById('sheetsUrl');
   if(sheetsUrlInput) sheetsUrlInput.addEventListener('change', ()=>{ state.sheetsWebhookUrl = sheetsUrlInput.value.trim(); saveState(); });
