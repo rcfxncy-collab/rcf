@@ -165,6 +165,38 @@ body{
     .loc-map iframe{height:300px;}
 }
 
+
+/* FOOTER */
+.site-footer{background:#1d1212;color:rgba(255,255,255,.78);padding:60px 6% 26px;text-align:left;}
+.f-inner{max-width:1250px;margin:0 auto;}
+.f-top{display:flex;justify-content:space-between;align-items:center;gap:30px;flex-wrap:wrap;padding-bottom:46px;border-bottom:1px solid rgba(255,255,255,.12);}
+.f-msg h4{display:flex;align-items:center;gap:10px;color:#e3c46e;font-size:21px;font-weight:600;margin-bottom:16px;}
+.f-msg form{display:flex;gap:12px;flex-wrap:wrap;}
+.f-msg input{flex:1 1 190px;min-width:0;height:54px;padding:0 18px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-family:inherit;outline:none;}
+.f-msg input::placeholder{color:rgba(255,255,255,.5);}
+.f-msg input:focus{border-color:#e3c46e;}
+.f-msg button{width:62px;height:54px;border:0;border-radius:12px;background:#e3c46e;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+.f-msg button:hover{transform:translateY(-2px);}
+.f-msg button svg{width:22px;height:22px;fill:#2a1717;}
+.f-logo img{height:96px;width:auto;display:block;opacity:.95;}
+.f-main{display:grid;grid-template-columns:1.4fr 2.6fr;gap:50px;padding:46px 0;}
+.f-brand h3{font-size:34px;font-weight:600;color:#e3c46e;line-height:1.15;margin-bottom:16px;}
+.f-brand p{font-size:15px;line-height:1.9;color:rgba(255,255,255,.65);margin-bottom:22px;}
+.f-social{display:flex;gap:12px;}
+.f-social a{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;transition:background .25s, transform .25s;}
+.f-social a:hover{background:#e3c46e;transform:translateY(-3px);}
+.f-social svg{width:21px;height:21px;fill:#fff;}
+.f-social a:hover svg{fill:#2a1717;}
+.f-links{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;}
+.f-links h5{color:#fff;font-size:15px;font-weight:600;margin-bottom:16px;letter-spacing:.3px;}
+.f-links a,.f-links span{display:block;color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;line-height:1.5;margin-bottom:13px;transition:color .2s;}
+.f-links a:hover{color:#e3c46e;}
+.f-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:24px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:14.5px;color:rgba(255,255,255,.6);}
+.f-bottom nav a{color:rgba(255,255,255,.8);text-decoration:none;margin-left:26px;}
+.f-bottom nav a:hover{color:#e3c46e;}
+@media(max-width:900px){.f-main{grid-template-columns:1fr;gap:34px;}.f-links{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.site-footer{padding:44px 6% 22px;}.f-logo{display:none;}.f-bottom nav a{margin:0 18px 0 0;}}
+
 /* SCROLL REVEAL */
 .js .reveal{opacity:0;transform:translateY(46px);transition:opacity .8s ease, transform .8s ease;}
 .js .reveal.in{opacity:1;transform:none;}
@@ -294,6 +326,16 @@ setInterval(()=>{
     update();
 })();
 
+/* Footer message -> opens WhatsApp with the text filled in */
+function sendMsg(e){
+    e.preventDefault();
+    const n=document.getElementById('fName').value.trim(), m=document.getElementById('fMsg').value.trim();
+    if(!m){ document.getElementById('fMsg').focus(); return false; }
+    const text='Hi Royal Collection & Fancy, '+(n?'I am '+n+'. ':'')+m;
+    window.open('https://wa.me/917418592010?text='+encodeURIComponent(text),'_blank');
+    return false;
+}
+
 /* Sections fade/slide up when they come into view */
 (function(){
     const els=document.querySelectorAll('.reveal');
@@ -304,8 +346,65 @@ setInterval(()=>{
     els.forEach(e=>io.observe(e));
 })();
 </script>
-<footer style="text-align:center;padding:20px;background:#111;color:white;">
-&copy; 2026 Royal Collection & Fancy. All rights reserved
+<footer class="site-footer">
+<div class="f-inner">
+
+    <div class="f-top">
+        <div class="f-msg">
+            <h4><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e3c46e" stroke-width="1.6"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M3 7l9 6.5L21 7"/></svg> Send us a message</h4>
+            <form onsubmit="return sendMsg(event)">
+                <input type="text" id="fName" placeholder="Enter your name">
+                <input type="text" id="fMsg" placeholder="What are you looking for?">
+                <button type="submit" aria-label="Send on WhatsApp"><svg viewBox="0 0 24 24"><path d="M2.5 11.3 21 3.2c.8-.35 1.6.45 1.25 1.25l-8.1 18.5c-.4.9-1.7.85-2-.1l-2.1-6.6-6.6-2.1c-.95-.3-1-1.6-.05-2z"/></svg></button>
+            </form>
+        </div>
+        <div class="f-logo"><img src="public/logorcf.png" alt="RCF"></div>
+    </div>
+
+    <div class="f-main">
+        <div class="f-brand">
+            <h3>Royal Collection &amp; Fancy.</h3>
+            <p>Premium fashion, accessories, handbags and gifts for every occasion, in the heart of Karambakudi. Come in and feel the royal vibe.</p>
+            <div class="f-social">
+                <a href="https://wa.me/917418592010" target="_blank" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm5.2 13.9c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.1-.3.3-.1.6.2.3.8 1.300 1.700 2.100 1.200 1 2.100 1.300 2.400 1.500.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.900.9c.3.1.5.2.5.3.1.2.1.8-.1 1.400z"/></svg></a>
+                <a href="https://instagram.com/rcfxncy/" target="_blank" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M7.5 2h9A5.500 5.500 0 0 1 22 7.500v9a5.500 5.500 0 0 1-5.500 5.500h-9A5.500 5.500 0 0 1 2 16.500v-9A5.500 5.500 0 0 1 7.500 2zm0 2A3.500 3.500 0 0 0 4 7.500v9A3.500 3.500 0 0 0 7.500 20h9a3.500 3.500 0 0 0 3.500-3.500v-9A3.500 3.500 0 0 0 16.500 4h-9zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm5.300-3.300a1.200 1.200 0 1 1 0 2.400 1.200 1.200 0 0 1 0-2.400z"/></svg></a>
+                <a href="mailto:rcfxncy@gmail.com" aria-label="Email"><svg viewBox="0 0 24 24"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.500 2 7.500 5.300L19.500 7h-15zM4 9.300V17h16V9.300l-8 5.600-8-5.600z"/></svg></a>
+            </div>
+        </div>
+        <div class="f-links">
+            <div>
+                <h5>Quick Links</h5>
+                <a href="#home">Home</a>
+                <a href="#about">About Us</a>
+                <a href="#location">Our Location</a>
+                <a href="#contact">Contact Us</a>
+            </div>
+            <div>
+                <h5>Customers</h5>
+                <a href="checkbill.html">Check Your Bill</a>
+                <a href="https://wa.me/917418592010" target="_blank">Order on WhatsApp</a>
+                <a href="https://instagram.com/rcfxncy/" target="_blank">New Arrivals</a>
+            </div>
+            <div>
+                <h5>Visit Us</h5>
+                <span>20-1, Vaniya St,<br>Karambakudi</span>
+                <a href="https://www.google.com/maps/search/?api=1&query=ROYAL+COLLECTION+%26+FANCY+Karambakkudi" target="_blank">Get Directions</a>
+            </div>
+            <div>
+                <h5>Get in Touch</h5>
+                <a href="https://wa.me/917418592010" target="_blank">+91 7418592010</a>
+                <a href="mailto:rcfxncy@gmail.com">rcfxncy@gmail.com</a>
+                <a href="https://instagram.com/rcfxncy/" target="_blank">@rcfxncy</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="f-bottom">
+        <div>&copy; 2026 Royal Collection &amp; Fancy. All rights reserved.</div>
+        <nav><a href="checkbill.html">Check Your Bill</a><a href="#contact">Contact</a></nav>
+    </div>
+
+</div>
 </footer>
 </body>
 
