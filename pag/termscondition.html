@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terms &amp; Condition | Our Store</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--tx:#222;--mut:#666;--acc:#c9a24d;--bd:#e7e0d3;--sh:0 4px 18px rgba(0,0,0,.07)}
+[data-theme=dark]{--bg:#121212;--card:#1d1d1d;--tx:#eee;--mut:#a5a5a5;--acc:#e0b66a;--bd:#2e2e2e;--sh:0 4px 18px rgba(0,0,0,.5)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.65;transition:background .3s,color .3s}
+a{color:var(--acc)}.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+#bar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--acc);z-index:99}
+.hd{position:sticky;top:0;z-index:50;background:#1c1c1c;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.hd .row{display:flex;justify-content:space-between;align-items:center;padding:12px 24px}
+.brand{color:#fff;font-weight:700;font-size:20px;text-decoration:none;letter-spacing:.5px}
+.ctl button{background:none;border:1px solid #555;color:#fff;border-radius:6px;padding:4px 10px;margin-left:8px;cursor:pointer;font-size:16px}
+#mb{display:none}
+nav{background:#2d2d2d;padding:0 24px;display:flex;flex-wrap:wrap;gap:2px 6px}
+nav a{color:#ddd;text-decoration:none;font-size:14px;padding:10px;border-bottom:2px solid transparent}
+nav a:hover{color:#e0b66a}nav a.on{color:#e0b66a;border-color:#e0b66a}
+.hero{background:linear-gradient(135deg,#1c1c1c,#3a2f1a);color:#fff;padding:46px 0}
+.hero h1{margin:6px 0;font-size:34px}.hero p{margin:0;color:#ddd;max-width:640px}.crumb{font-size:13px;color:#e0b66a}
+main{padding:34px 20px 60px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:22px;box-shadow:var(--sh);margin:16px 0}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}.grid .card{margin:0;text-align:center}
+.ico{font-size:30px}.stat b{display:block;font-size:30px;color:var(--acc)}
+.field{margin:12px 0}label{font-weight:600;display:block;margin-bottom:4px;font-size:14px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font:inherit;background:var(--bg);color:var(--tx)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-color:transparent}
+.err{color:#d33;font-size:12.5px;min-height:16px;display:block}.hint{font-size:12.5px;color:var(--mut)}
+.two{display:grid;gap:0 16px;grid-template-columns:1fr 1fr}
+.btn{background:var(--acc);color:#111;border:0;border-radius:8px;padding:12px 26px;font-weight:700;cursor:pointer;font-size:15px}.btn:hover{filter:brightness(1.1)}
+.btn.o{background:none;border:1px solid var(--acc);color:var(--acc);padding:6px 14px;font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:20px;padding:6px 16px;cursor:pointer}.chip.on{background:var(--acc);color:#111;border-color:var(--acc)}
+details{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;margin:10px 0}summary{cursor:pointer;font-weight:600}details p{color:var(--mut);margin:10px 0 2px}
+.layout{display:grid;grid-template-columns:230px 1fr;gap:30px;align-items:start}
+.side{position:sticky;top:80px}.side #toc a{display:block;color:var(--mut);text-decoration:none;font-size:14px;padding:6px 10px;border-left:3px solid var(--bd)}.side #toc a.on{color:var(--acc);border-color:var(--acc);font-weight:600}
+.doc{margin-top:0}.doc h2{font-size:21px;margin-top:30px;scroll-margin-top:80px}.doc p,.doc li{color:var(--mut)}
+.meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;font-size:13px;color:var(--mut)}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--bd);font-size:14.5px}th{color:var(--acc)}
+.steps{counter-reset:s;list-style:none;padding:0}.steps li{position:relative;padding:4px 0 16px 46px}
+.steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--acc);color:#111;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ok{text-align:center;padding:30px}.ok .ico{font-size:50px}.tid{font-size:26px;font-weight:700;color:var(--acc);letter-spacing:2px}
+.est{background:var(--bg);border:1px dashed var(--acc);border-radius:10px;padding:14px;margin:14px 0}.est div{display:flex;justify-content:space-between;padding:3px 0}.est .tot{font-size:20px;font-weight:700;color:var(--acc)}
+.js .rv{opacity:0;transform:translateY(16px);transition:.6s}.js .rv.in{opacity:1;transform:none}
+footer{text-align:center;padding:26px;color:var(--mut);font-size:13px;border-top:1px solid var(--bd)}
+#top{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:50%;border:0;background:var(--acc);color:#111;font-size:20px;cursor:pointer;display:none;z-index:40}
+@media(max-width:860px){#mb{display:inline-block}nav{display:none;flex-direction:column;padding:6px 24px}nav.open{display:flex}.layout,.two{grid-template-columns:1fr}.side{position:static}}
+@media print{.hd,.hero,.side,#top,#bar,.noprint{display:none!important}.layout{display:block}body{background:#fff;color:#000}.card{box-shadow:none}}
+</style></head>
+<body><div id="bar"></div>
+<header class="hd"><div class="row"><a class="brand" href="/">&#10022; Our Store</a><div class="ctl"><button id="thm" aria-label="Toggle theme">&#9680;</button></div></div></header>
+<section class="hero"><div class="wrap"><div class="crumb">Home &rsaquo; Terms &amp; Condition</div><h1>Terms &amp; Condition</h1><p>Please read these terms before using our website or placing an order.</p></div></section>
+<main class="wrap"><div class="layout"><aside class="side noprint"><b>Contents</b><div id="toc"></div></aside><article class="doc card"><div class="meta"><span>Last updated: 20 November 2026</span><button class="btn o noprint" onclick="print()">&#128424; Print</button></div><h2>Acceptance of Terms</h2><p>By accessing this website or placing an order you agree to these terms and our other policies.</p><h2>Products and Pricing</h2><p>Colours may vary slightly from images due to screen settings. Prices are in INR, inclusive of applicable taxes, and may change without notice.</p><h2>Orders and Cancellation</h2><p>We may cancel orders for stock issues, pricing errors or suspected fraud, with a full refund. Customers may cancel before dispatch.</p><h2>Payments</h2><p>Payments must be made through the methods offered at checkout. You confirm you are authorised to use the chosen payment method.</p><h2>Shipping and Delivery</h2><p>Delivery timelines are estimates. Delays caused by couriers, weather or incorrect addresses are outside our control.</p><h2>User Conduct</h2><ul><li>Provide accurate information</li><li>Do not misuse, hack or disrupt the website</li><li>Do not copy our content (see <a href='copyrightpolicy.html'>Copyright Policy</a>)</li></ul><h2>Limitation of Liability</h2><p>We are not liable for indirect or consequential losses. Our liability is limited to the value of the order concerned.</p><h2>Governing Law</h2><p>These terms are governed by the laws of India. Courts in Pudukkottai, Tamil Nadu have exclusive jurisdiction.</p><h2>Changes</h2><p>We may update these terms at any time. Continued use means you accept the changes.</p></article></div></main>
+<footer>&copy; 2026 Our Store. All rights reserved. &nbsp;|&nbsp; rcfxncy@gmail.com &nbsp;|&nbsp; +91 74185 92010<br>Vaniya Street, Karambakkudi, Pudukkottai - 622302</footer>
+<button id="top" aria-label="Back to top">&uarr;</button>
+<script>
+var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+(function(){var r=document.documentElement,t;try{t=localStorage.getItem('th')}catch(e){}
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';r.setAttribute('data-theme',t);r.className='js';
+$('#thm').onclick=function(){t=t=='dark'?'light':'dark';r.setAttribute('data-theme',t);try{localStorage.setItem('th',t)}catch(e){}};
+onscroll=function(){var h=r.scrollHeight-innerHeight;$('#bar').style.width=(h>0?scrollY/h*100:0)+'%';$('#top').style.display=scrollY>400?'block':'none'};
+$('#top').onclick=function(){scrollTo({top:0,behavior:'smooth'})};
+var ro=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');ro.unobserve(e.target)}})});
+$$('.rv').forEach(function(e){ro.observe(e)});
+if($('.doc')){var hs=$$('.doc h2'),tl=$('#toc');hs.forEach(function(h,i){h.id='s'+(i+1);var a=document.createElement('a');a.href='#s'+(i+1);a.textContent=h.textContent;tl.appendChild(a)});
+var so=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)$$('#toc a').forEach(function(a){a.classList.toggle('on',a.getAttribute('href')=='#'+e.target.id)})})},{rootMargin:'-20% 0px -70% 0px'});hs.forEach(function(h){so.observe(h)})}
+})();
+
+</script></body></html>
